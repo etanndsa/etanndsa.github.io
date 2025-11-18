@@ -7,8 +7,11 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "predeploy": "npm run build",
+    "deploy": "git config core.eol lf && git config core.autocrlf false && gh-pages -d dist && git config --unset core.eol && git config --unset core.autocrlf"
   },
+  "homepage": "https://etanndsa.github.io/etanndsa.github.io",
   "dependencies": {
     "lucide-react": "^0.548.0",
     "react": "^19.2.0",
@@ -25,6 +28,7 @@
     "eslint": "^9.36.0",
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.22",
+    "gh-pages": "^6.3.0",
     "globals": "^16.4.0",
     "postcss": "^8.5.6",
     "tailwindcss": "^3.4.18",
