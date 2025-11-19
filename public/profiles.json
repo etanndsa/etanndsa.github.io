@@ -6,14 +6,21 @@
         "mesInfos": {
             "nom": "Dupont",
             "prenom": "Alice",
-            "dateNaissance": "1975-05-12"
+            "dateNaissance": "1975-05-12",
+            "sexe": "Homme",
+            "handicape": false,
+            "militaire": true
         },
         "periodesStockees": [
             {
                 "id": 1,
                 "debut": "1995-01-01",
                 "fin": "1995-12-31",
-                "salaire": 20000
+                "type": "TRAVAIL",
+                "salaire": 20000,
+                "salaireEuro": 3048.98,
+                "devise": "FRF",
+                "valide": true
             }
         ]
     },
@@ -31,7 +38,7 @@
             "enfants": [
                 {
                     "prenom": "Donut",
-                    "nom": "L'inutile",
+                    "nom": "Useless",
                     "dateNaissance": "2025-10-29",
                     "adopte": false
                 },
@@ -47,7 +54,7 @@
                     "dateNaissance": "2014-09-20",
                     "adopte": true,
                     "ageAdoption": 2,
-                    "adoptionAnnee": 2024
+                    "adoptionAnnee": 2014
                 }
             ]
         },
@@ -56,8 +63,9 @@
                 "id": 1,
                 "debut": "1985-01-01",
                 "fin": "1985-12-31",
+                "type": "TRAVAIL",
                 "salaire": 1048,
-                "salaireEuro": 159.76,
+                "salaireEuro": 159.77,
                 "devise": "FRF",
                 "valide": true
             },
@@ -65,15 +73,7 @@
                 "id": 2,
                 "debut": "1984-01-01",
                 "fin": "1984-12-31",
-                "salaire": 532,
-                "salaireEuro": 81.1,
-                "devise": "FRF",
-                "valide": true
-            },
-            {
-                "id": 255,
-                "debut": "1985-01-01",
-                "fin": "1985-12-31",
+                "type": "TRAVAIL",
                 "salaire": 532,
                 "salaireEuro": 81.1,
                 "devise": "FRF",
@@ -81,685 +81,1262 @@
             },
             {
                 "id": 3,
-                "debut": "1986-01-01",
-                "fin": "1986-12-31",
+                "debut": "1985-01-01",
+                "fin": "1985-12-31",
+                "type": "TRAVAIL",
                 "salaire": 532,
                 "salaireEuro": 81.1,
                 "devise": "FRF",
                 "valide": true
             },
             {
-                "id": 9,
+                "id": 4,
+                "debut": "1986-01-01",
+                "fin": "1986-12-31",
+                "type": "TRAVAIL",
+                "salaire": 532,
+                "salaireEuro": 81.1,
+                "devise": "FRF",
+                "valide": true
+            },
+            {
+                "id": 5,
                 "debut": "1987-01-01",
                 "fin": "1987-12-31",
+                "type": "TRAVAIL",
                 "salaire": 25978,
                 "salaireEuro": 3957.54,
                 "devise": "FRF",
                 "valide": true
             },
             {
-                "id": 88,
+                "id": 6,
                 "debut": "1988-01-01",
                 "fin": "1988-12-31",
+                "type": "TRAVAIL",
                 "salaire": 2550,
-                "salaireEuro": null,
+                "salaireEuro": 388.75,
                 "devise": "FRF",
                 "valide": true
             },
             {
-                "id": 12,
+                "id": 7,
                 "debut": "1987-01-01",
                 "fin": "1987-12-31",
+                "type": "TRAVAIL",
                 "salaire": 62511,
                 "salaireEuro": 9591.95,
                 "devise": "FRF",
                 "valide": true
             },
             {
-                "id": 14,
+                "id": 8,
                 "debut": "1988-01-01",
                 "fin": "1988-12-31",
+                "type": "TRAVAIL",
                 "salaire": 55819,
                 "salaireEuro": 8967.11,
                 "devise": "FRF",
                 "valide": true
             },
             {
-                "id": 16,
+                "id": 9,
                 "debut": "1989-01-01",
                 "fin": "1989-12-31",
+                "type": "TRAVAIL",
                 "salaire": 96005,
-                "salaireEuro": null,
+                "salaireEuro": 14635.87,
                 "devise": "FRF",
                 "valide": true
             },
             {
-                "id": 19,
+                "id": 10,
                 "debut": "1990-01-01",
                 "fin": "1990-12-31",
+                "type": "TRAVAIL",
                 "salaire": 3420,
                 "salaireEuro": 521.37,
                 "devise": "FRF",
                 "valide": true
             },
             {
-                "id": 20,
+                "id": 11,
                 "debut": "1991-01-01",
                 "fin": "1991-12-31",
+                "type": "TRAVAIL",
                 "salaire": 2460,
                 "salaireEuro": 374.99,
                 "devise": "FRF",
                 "valide": true
             },
             {
-                "id": 21,
+                "id": 12,
                 "debut": "1990-01-01",
                 "fin": "1990-11-30",
+                "type": "TRAVAIL",
                 "salaire": 8988,
                 "salaireEuro": 1366.11,
                 "devise": "FRF",
                 "valide": true
             },
             {
-                "id": 22,
+                "id": 13,
                 "debut": "1990-01-01",
                 "fin": "1990-12-31",
+                "type": "TRAVAIL",
                 "salaire": 101300,
-                "salaireEuro": 1366.11,
+                "salaireEuro": 15443.09,
+                "devise": "FRF",
+                "valide": true
+            },
+            {
+                "id": 14,
+                "debut": "1991-01-01",
+                "fin": "1991-12-31",
+                "type": "TRAVAIL",
+                "salaire": 107928,
+                "salaireEuro": 16453.52,
+                "devise": "FRF",
+                "valide": true
+            },
+            {
+                "id": 15,
+                "debut": "1992-01-01",
+                "fin": "1992-12-31",
+                "type": "TRAVAIL",
+                "salaire": 127938,
+                "salaireEuro": 19504.02,
+                "devise": "FRF",
+                "valide": true
+            },
+            {
+                "id": 16,
+                "debut": "1993-01-01",
+                "fin": "1993-12-31",
+                "type": "TRAVAIL",
+                "salaire": 134925,
+                "salaireEuro": 20569.18,
+                "devise": "FRF",
+                "valide": true
+            },
+            {
+                "id": 17,
+                "debut": "1994-01-01",
+                "fin": "1994-12-31",
+                "type": "TRAVAIL",
+                "salaire": 140268,
+                "salaireEuro": 21383.72,
+                "devise": "FRF",
+                "valide": true
+            },
+            {
+                "id": 18,
+                "debut": "1995-01-01",
+                "fin": "1995-12-31",
+                "type": "TRAVAIL",
+                "salaire": 140758,
+                "salaireEuro": 21458.42,
+                "devise": "FRF",
+                "valide": true
+            },
+            {
+                "id": 19,
+                "debut": "1996-01-01",
+                "fin": "1996-12-31",
+                "type": "TRAVAIL",
+                "salaire": 155841,
+                "salaireEuro": 23757.81,
+                "devise": "FRF",
+                "valide": true
+            },
+            {
+                "id": 20,
+                "debut": "1997-01-01",
+                "fin": "1997-12-31",
+                "type": "TRAVAIL",
+                "salaire": 85914,
+                "salaireEuro": 13097.51,
+                "devise": "FRF",
+                "valide": true
+            },
+            {
+                "id": 21,
+                "debut": "1998-01-01",
+                "fin": "1998-12-31",
+                "type": "TRAVAIL",
+                "salaire": 121859,
+                "salaireEuro": 18577.28,
+                "devise": "FRF",
+                "valide": true
+            },
+            {
+                "id": 22,
+                "debut": "1999-01-01",
+                "fin": "1999-12-31",
+                "type": "TRAVAIL",
+                "salaire": 120579,
+                "salaireEuro": 18382.15,
                 "devise": "FRF",
                 "valide": true
             },
             {
                 "id": 23,
-                "debut": "1991-01-01",
-                "fin": "1991-12-31",
-                "salaire": 107928,
-                "salaireEuro": null,
+                "debut": "2000-01-01",
+                "fin": "2000-12-31",
+                "type": "TRAVAIL",
+                "salaire": 120579,
+                "salaireEuro": 18382.15,
                 "devise": "FRF",
                 "valide": true
             },
             {
                 "id": 24,
-                "debut": "1992-01-01",
-                "fin": "1992-12-31",
-                "salaire": 127938,
-                "salaireEuro": null,
+                "debut": "2001-01-01",
+                "fin": "2001-12-31",
+                "type": "TRAVAIL",
+                "salaire": 145196,
+                "salaireEuro": 22134.99,
                 "devise": "FRF",
                 "valide": true
             },
             {
                 "id": 25,
-                "debut": "1993-01-01",
-                "fin": "1993-12-31",
-                "salaire": 134925,
-                "salaireEuro": null,
-                "devise": "FRF",
-                "valide": true
-            },
-            {
-                "id": 26,
-                "debut": "1994-01-01",
-                "fin": "1994-12-31",
-                "salaire": 140268,
-                "salaireEuro": null,
-                "devise": "FRF",
-                "valide": true
-            },
-            {
-                "id": 27,
-                "debut": "1995-01-01",
-                "fin": "1995-12-31",
-                "salaire": 140758,
-                "salaireEuro": null,
-                "devise": "FRF",
-                "valide": true
-            },
-            {
-                "id": 28,
-                "debut": "1996-01-01",
-                "fin": "1996-12-31",
-                "salaire": 155841,
-                "salaireEuro": null,
-                "devise": "FRF",
-                "valide": true
-            },
-            {
-                "id": 29,
-                "debut": "1997-01-01",
-                "fin": "1997-12-31",
-                "salaire": 85914,
-                "salaireEuro": null,
-                "devise": "FRF",
-                "valide": true
-            },
-            {
-                "id": 30,
-                "debut": "1998-01-01",
-                "fin": "1998-12-31",
-                "salaire": 121859,
-                "salaireEuro": null,
-                "devise": "FRF",
-                "valide": true
-            },
-            {
-                "id": 31,
-                "debut": "1999-01-01",
-                "fin": "1999-12-31",
-                "salaire": 120579,
-                "salaireEuro": null,
-                "devise": "FRF",
-                "valide": true
-            },
-            {
-                "id": 32,
-                "debut": "2000-01-01",
-                "fin": "2000-12-31",
-                "salaire": 120579,
-                "salaireEuro": null,
-                "devise": "FRF",
-                "valide": true
-            },
-            {
-                "id": 33,
-                "debut": "2001-01-01",
-                "fin": "2001-12-31",
-                "salaire": 145196,
-                "salaireEuro": null,
-                "devise": "FRF",
-                "valide": true
-            },
-            {
-                "id": 34,
                 "debut": "2002-01-01",
                 "fin": "2002-12-31",
+                "type": "TRAVAIL",
                 "salaire": 22817,
                 "salaireEuro": 22817,
                 "devise": "EUR",
                 "valide": true
             },
             {
-                "id": 35,
+                "id": 26,
                 "debut": "2003-01-01",
                 "fin": "2003-12-31",
-                "salaire": 14582,
-                "salaireEuro": null,
-                "devise": "EUR",
-                "valide": true
-            },
-            {
-                "id": 355,
-                "debut": "1994-01-01",
-                "fin": "1994-12-31",
-                "salaire": 6300,
-                "salaireEuro": null,
-                "devise": "FRF",
-                "valide": true
-            },
-            {
-                "id": 356,
-                "debut": "1995-01-01",
-                "fin": "1995-12-31",
-                "salaire": 6300,
-                "salaireEuro": null,
-                "devise": "FRF",
-                "valide": true
-            },
-            {
-                "id": 357,
-                "debut": "1996-01-01",
-                "fin": "1996-12-31",
-                "salaire": 5850,
-                "salaireEuro": null,
-                "devise": "FRF",
-                "valide": true
-            },
-            {
-                "id": 358,
-                "debut": "1994-07-01",
-                "fin": "1994-07-30",
-                "salaire": 6298,
-                "salaireEuro": null,
-                "devise": "FRF",
-                "valide": true
-            },
-            {
-                "id": 359,
-                "debut": "1995-01-01",
-                "fin": "1995-12-31",
-                "salaire": 492,
-                "salaireEuro": null,
-                "devise": "FRF",
-                "valide": true
-            },
-            {
-                "id": 360,
-                "debut": "1996-01-01",
-                "fin": "1996-12-31",
-                "salaire": 570,
-                "salaireEuro": null,
-                "devise": "FRF",
-                "valide": true
-            },
-            {
-                "id": 361,
-                "debut": "1995-01-01",
-                "fin": "1995-12-31",
-                "salaire": 6298,
-                "salaireEuro": null,
-                "devise": "FRF",
-                "valide": true
-            },
-            {
-                "id": 362,
-                "debut": "1996-01-01",
-                "fin": "1996-12-31",
-                "salaire": 5852,
-                "salaireEuro": null,
-                "devise": "FRF",
-                "valide": true
-            },
-            {
-                "id": 363,
-                "debut": "1995-04-01",
-                "fin": "1995-12-31",
-                "salaire": 492,
-                "salaireEuro": null,
-                "devise": "FRF",
-                "valide": true
-            },
-            {
-                "id": 364,
-                "debut": "1996-01-01",
-                "fin": "1996-08-31",
-                "salaire": 571,
-                "salaireEuro": null,
-                "devise": "FRF",
-                "valide": true
-            },
-            {
-                "id": 366,
-                "debut": "1999-01-01",
-                "fin": "1999-12-31",
-                "salaire": 2700,
-                "salaireEuro": null,
-                "devise": "FRF",
-                "valide": true
-            },
-            {
-                "id": 367,
-                "debut": "2000-01-01",
-                "fin": "2000-12-31",
-                "salaire": 2700,
-                "salaireEuro": null,
-                "devise": "FRF",
-                "valide": true
-            },
-            {
-                "id": 368,
-                "debut": "2001-01-01",
-                "fin": "2001-12-31",
-                "salaire": 309,
-                "salaireEuro": 309,
-                "devise": "EUR",
-                "valide": true
-            },
-            {
-                "id": 369,
-                "debut": "2002-01-01",
-                "fin": "2002-12-31",
-                "salaire": 306,
-                "salaireEuro": 306,
-                "devise": "EUR",
-                "valide": true
-            },
-            {
-                "id": 370,
-                "debut": "2003-07-01",
-                "fin": "2003-12-31",
+                "type": "TRAVAIL",
                 "salaire": 14582,
                 "salaireEuro": 14582,
                 "devise": "EUR",
                 "valide": true
             },
             {
-                "id": 371,
+                "id": 27,
+                "debut": "1994-01-01",
+                "fin": "1994-12-31",
+                "type": "TRAVAIL",
+                "salaire": 6300,
+                "salaireEuro": 960.43,
+                "devise": "FRF",
+                "valide": true
+            },
+            {
+                "id": 28,
+                "debut": "1995-01-01",
+                "fin": "1995-12-31",
+                "type": "TRAVAIL",
+                "salaire": 6300,
+                "salaireEuro": 960.43,
+                "devise": "FRF",
+                "valide": true
+            },
+            {
+                "id": 29,
+                "debut": "1996-01-01",
+                "fin": "1996-12-31",
+                "type": "TRAVAIL",
+                "salaire": 5850,
+                "salaireEuro": 891.83,
+                "devise": "FRF",
+                "valide": true
+            },
+            {
+                "id": 30,
+                "debut": "1994-07-01",
+                "fin": "1994-07-30",
+                "type": "TRAVAIL",
+                "salaire": 6298,
+                "salaireEuro": 960.12,
+                "devise": "FRF",
+                "valide": true
+            },
+            {
+                "id": 31,
+                "debut": "1995-01-01",
+                "fin": "1995-12-31",
+                "type": "TRAVAIL",
+                "salaire": 492,
+                "salaireEuro": 75.0,
+                "devise": "FRF",
+                "valide": true
+            },
+            {
+                "id": 32,
+                "debut": "1996-01-01",
+                "fin": "1996-12-31",
+                "type": "TRAVAIL",
+                "salaire": 570,
+                "salaireEuro": 86.89,
+                "devise": "FRF",
+                "valide": true
+            },
+            {
+                "id": 33,
+                "debut": "1995-01-01",
+                "fin": "1995-12-31",
+                "type": "TRAVAIL",
+                "salaire": 6298,
+                "salaireEuro": 960.12,
+                "devise": "FRF",
+                "valide": true
+            },
+            {
+                "id": 34,
+                "debut": "1996-01-01",
+                "fin": "1996-12-31",
+                "type": "TRAVAIL",
+                "salaire": 5852,
+                "salaireEuro": 892.13,
+                "devise": "FRF",
+                "valide": true
+            },
+            {
+                "id": 35,
+                "debut": "1995-04-01",
+                "fin": "1995-12-31",
+                "type": "TRAVAIL",
+                "salaire": 492,
+                "salaireEuro": 75.0,
+                "devise": "FRF",
+                "valide": true
+            },
+            {
+                "id": 36,
+                "debut": "1996-01-01",
+                "fin": "1996-08-31",
+                "type": "TRAVAIL",
+                "salaire": 571,
+                "salaireEuro": 87.05,
+                "devise": "FRF",
+                "valide": true
+            },
+            {
+                "id": 37,
+                "debut": "1999-01-01",
+                "fin": "1999-12-31",
+                "type": "TRAVAIL",
+                "salaire": 2700,
+                "salaireEuro": 411.61,
+                "devise": "FRF",
+                "valide": true
+            },
+            {
+                "id": 38,
+                "debut": "2000-01-01",
+                "fin": "2000-12-31",
+                "type": "TRAVAIL",
+                "salaire": 2700,
+                "salaireEuro": 411.61,
+                "devise": "FRF",
+                "valide": true
+            },
+            {
+                "id": 39,
+                "debut": "2001-01-01",
+                "fin": "2001-12-31",
+                "type": "TRAVAIL",
+                "salaire": 309,
+                "salaireEuro": 309,
+                "devise": "EUR",
+                "valide": true
+            },
+            {
+                "id": 40,
+                "debut": "2002-01-01",
+                "fin": "2002-12-31",
+                "type": "TRAVAIL",
+                "salaire": 306,
+                "salaireEuro": 306,
+                "devise": "EUR",
+                "valide": true
+            },
+            {
+                "id": 41,
+                "debut": "2003-07-01",
+                "fin": "2003-12-31",
+                "type": "TRAVAIL",
+                "salaire": 14582,
+                "salaireEuro": 14582,
+                "devise": "EUR",
+                "valide": true
+            },
+            {
+                "id": 42,
                 "debut": "2004-01-01",
                 "fin": "2004-12-31",
+                "type": "TRAVAIL",
                 "salaire": 29712,
                 "salaireEuro": 29712,
                 "devise": "EUR",
                 "valide": true
             },
             {
-                "id": 372,
+                "id": 43,
                 "debut": "2005-01-01",
                 "fin": "2005-12-31",
+                "type": "TRAVAIL",
                 "salaire": 30192,
                 "salaireEuro": 30192,
                 "devise": "EUR",
                 "valide": true
             },
             {
-                "id": 373,
+                "id": 44,
                 "debut": "2006-01-01",
                 "fin": "2006-12-31",
+                "type": "TRAVAIL",
                 "salaire": 31098,
                 "salaireEuro": 31098,
                 "devise": "EUR",
                 "valide": true
             },
             {
-                "id": 37,
+                "id": 45,
                 "debut": "2005-01-01",
                 "fin": "2005-12-31",
+                "type": "TRAVAIL",
                 "salaire": 109,
                 "salaireEuro": 109,
                 "devise": "EUR",
                 "valide": true
             },
             {
-                "id": 38,
+                "id": 46,
                 "debut": "2006-01-01",
                 "fin": "2006-12-31",
+                "type": "TRAVAIL",
                 "salaire": 109,
                 "salaireEuro": 109,
                 "devise": "EUR",
                 "valide": true
             },
             {
-                "id": 39,
+                "id": 47,
                 "debut": "2006-01-01",
                 "fin": "2006-12-31",
+                "type": "TRAVAIL",
                 "salaire": 109,
                 "salaireEuro": 109,
                 "devise": "EUR",
                 "valide": true
             },
             {
-                "id": 39,
+                "id": 48,
                 "debut": "2005-06-01",
                 "fin": "2005-12-31",
+                "type": "TRAVAIL",
                 "salaire": 110,
                 "salaireEuro": 110,
                 "devise": "EUR",
                 "valide": true
             },
             {
-                "id": 39,
+                "id": 49,
                 "debut": "2005-06-01",
                 "fin": "2005-12-31",
+                "type": "TRAVAIL",
                 "salaire": 110,
                 "salaireEuro": 110,
                 "devise": "EUR",
                 "valide": true
             },
             {
-                "id": 39,
+                "id": 50,
                 "debut": "2007-01-01",
                 "fin": "2007-12-31",
+                "type": "TRAVAIL",
                 "salaire": 32278,
                 "salaireEuro": 32278,
                 "devise": "EUR",
                 "valide": true
             },
             {
-                "id": 39,
+                "id": 51,
                 "debut": "2007-01-01",
                 "fin": "2007-12-31",
+                "type": "TRAVAIL",
                 "salaire": 94,
                 "salaireEuro": 94,
                 "devise": "EUR",
                 "valide": true
             },
             {
-                "id": 40,
+                "id": 52,
                 "debut": "2008-01-01",
                 "fin": "2008-12-31",
+                "type": "TRAVAIL",
                 "salaire": 33276,
                 "salaireEuro": 33276,
                 "devise": "EUR",
                 "valide": true
             },
             {
-                "id": 41,
+                "id": 53,
                 "debut": "2009-01-01",
                 "fin": "2009-12-31",
+                "type": "TRAVAIL",
                 "salaire": 34308,
                 "salaireEuro": 34308,
                 "devise": "EUR",
                 "valide": true
             },
             {
-                "id": 42,
+                "id": 54,
                 "debut": "2010-01-01",
                 "fin": "2010-12-31",
+                "type": "TRAVAIL",
                 "salaire": 34620,
                 "salaireEuro": 34620,
                 "devise": "EUR",
                 "valide": true
             },
             {
-                "id": 41,
+                "id": 55,
                 "debut": "2009-01-01",
                 "fin": "2009-12-31",
+                "type": "TRAVAIL",
                 "salaire": 177,
                 "salaireEuro": 177,
                 "devise": "EUR",
                 "valide": true
             },
             {
-                "id": 41,
+                "id": 56,
                 "debut": "2009-01-01",
                 "fin": "2009-12-31",
+                "type": "TRAVAIL",
                 "salaire": 177,
                 "salaireEuro": 177,
                 "devise": "EUR",
                 "valide": true
             },
             {
-                "id": 41,
+                "id": 57,
                 "debut": "2010-01-01",
                 "fin": "2010-12-31",
+                "type": "TRAVAIL",
                 "salaire": 189,
                 "salaireEuro": 189,
                 "devise": "EUR",
                 "valide": true
             },
             {
-                "id": 41,
+                "id": 58,
                 "debut": "2010-01-01",
                 "fin": "2010-12-31",
+                "type": "TRAVAIL",
                 "salaire": 189,
                 "salaireEuro": 189,
                 "devise": "EUR",
                 "valide": true
             },
             {
-                "id": 43,
+                "id": 59,
                 "debut": "2011-01-01",
                 "fin": "2011-12-31",
+                "type": "TRAVAIL",
                 "salaire": 190,
                 "salaireEuro": 190,
                 "devise": "EUR",
                 "valide": true
             },
             {
-                "id": 43,
+                "id": 60,
                 "debut": "2011-01-01",
                 "fin": "2011-12-31",
+                "type": "TRAVAIL",
                 "salaire": 35621,
                 "salaireEuro": 35621,
                 "devise": "EUR",
                 "valide": true
             },
             {
-                "id": 44,
+                "id": 61,
                 "debut": "2012-01-01",
                 "fin": "2012-12-31",
+                "type": "TRAVAIL",
                 "salaire": 117,
                 "salaireEuro": 117,
                 "devise": "EUR",
                 "valide": true
             },
             {
-                "id": 45,
+                "id": 62,
                 "debut": "2013-01-01",
                 "fin": "2013-12-31",
+                "type": "TRAVAIL",
                 "salaire": 50,
                 "salaireEuro": 50,
                 "devise": "EUR",
                 "valide": true
             },
             {
-                "id": 46,
+                "id": 63,
                 "debut": "2014-01-01",
                 "fin": "2014-12-31",
+                "type": "TRAVAIL",
                 "salaire": 375,
                 "salaireEuro": 375,
                 "devise": "EUR",
                 "valide": true
             },
             {
-                "id": 44,
+                "id": 64,
                 "debut": "2012-01-01",
                 "fin": "2012-12-31",
+                "type": "TRAVAIL",
                 "salaire": 36372,
                 "salaireEuro": 36372,
                 "devise": "EUR",
                 "valide": true
             },
             {
-                "id": 44,
+                "id": 65,
                 "debut": "2013-01-01",
                 "fin": "2013-12-31",
+                "type": "TRAVAIL",
                 "salaire": 37032,
                 "salaireEuro": 37032,
                 "devise": "EUR",
                 "valide": true
             },
             {
-                "id": 44,
+                "id": 66,
                 "debut": "2014-01-01",
                 "fin": "2014-12-31",
+                "type": "TRAVAIL",
                 "salaire": 37548,
                 "salaireEuro": 37548,
                 "devise": "EUR",
                 "valide": true
             },
             {
-                "id": 47,
+                "id": 67,
                 "debut": "2015-01-01",
                 "fin": "2015-12-31",
+                "type": "TRAVAIL",
                 "salaire": 34040,
                 "salaireEuro": 34040,
                 "devise": "EUR",
                 "valide": true
             },
             {
-                "id": 48,
+                "id": 68,
                 "debut": "2016-01-01",
                 "fin": "2016-12-31",
+                "type": "TRAVAIL",
                 "salaire": 38616,
                 "salaireEuro": 38616,
                 "devise": "EUR",
                 "valide": true
             },
             {
-                "id": 49,
+                "id": 69,
                 "debut": "2017-01-01",
                 "fin": "2017-12-31",
+                "type": "TRAVAIL",
                 "salaire": 39220,
                 "salaireEuro": 38220,
                 "devise": "EUR",
                 "valide": true
             },
             {
-                "id": 50,
+                "id": 70,
                 "debut": "2018-01-01",
                 "fin": "2018-12-31",
+                "type": "TRAVAIL",
                 "salaire": 39732,
                 "salaireEuro": 39732,
                 "devise": "EUR",
                 "valide": true
             },
             {
-                "id": 51,
+                "id": 71,
                 "debut": "2019-01-01",
                 "fin": "2019-12-31",
+                "type": "TRAVAIL",
                 "salaire": 40524,
                 "salaireEuro": 40524,
                 "devise": "EUR",
                 "valide": true
             },
             {
-                "id": 52,
+                "id": 72,
                 "debut": "2020-01-01",
                 "fin": "2020-12-31",
+                "type": "TRAVAIL",
                 "salaire": 41136,
                 "salaireEuro": 41136,
                 "devise": "EUR",
                 "valide": true
             },
             {
-                "id": 52,
+                "id": 73,
                 "debut": "2012-02-01",
                 "fin": "2012-12-31",
+                "type": "TRAVAIL",
                 "salaire": 122,
                 "salaireEuro": 122,
                 "devise": "EUR",
                 "valide": true
             },
             {
-                "id": 52,
+                "id": 74,
                 "debut": "2015-01-01",
                 "fin": "2015-12-31",
+                "type": "TRAVAIL",
                 "salaire": 189,
                 "salaireEuro": 189,
                 "devise": "EUR",
                 "valide": true
             },
             {
-                "id": 52,
+                "id": 75,
                 "debut": "2017-01-01",
                 "fin": "2017-12-31",
+                "type": "TRAVAIL",
                 "salaire": 84,
                 "salaireEuro": 84,
                 "devise": "EUR",
                 "valide": true
             },
             {
-                "id": 53,
+                "id": 76,
                 "debut": "2021-01-01",
                 "fin": "2021-12-31",
+                "type": "TRAVAIL",
                 "salaire": 41136,
                 "salaireEuro": 41136,
                 "devise": "EUR",
                 "valide": true
             },
             {
-                "id": 54,
+                "id": 77,
                 "debut": "2022-01-01",
                 "fin": "2022-12-31",
+                "type": "TRAVAIL",
                 "salaire": 41136,
                 "salaireEuro": 41136,
                 "devise": "EUR",
                 "valide": true
             },
             {
-                "id": 55,
+                "id": 78,
                 "debut": "2023-01-01",
                 "fin": "2023-12-31",
+                "type": "TRAVAIL",
                 "salaire": 43992,
                 "salaireEuro": 43992,
                 "devise": "EUR",
                 "valide": true
             },
             {
-                "id": 56,
+                "id": 79,
                 "debut": "2024-01-01",
                 "fin": "2024-12-31",
+                "type": "TRAVAIL",
                 "salaire": 41620,
                 "salaireEuro": 41620,
+                "devise": "EUR",
+                "valide": true
+            }
+        ]
+    },
+    {
+        "id": "3",
+        "prenom": "Paul",
+        "nom": "Mulet",
+        "mesInfos": {
+            "nom": "Mulet",
+            "prenom": "Paul",
+            "dateNaissance": "1962-10-16",
+            "sexe": "Homme",
+            "handicape": false,
+            "militaire": false,
+            "enfants": [
+                {
+                    "prenom": "Enfant1",
+                    "nom": "Mulet",
+                    "dateNaissance": "1990-01-01",
+                    "adopte": false
+                },
+                {
+                    "prenom": "Enfant2",
+                    "nom": "Mulet",
+                    "dateNaissance": "1992-01-01",
+                    "adopte": false
+                },
+                {
+                    "prenom": "Enfant3",
+                    "nom": "Mulet",
+                    "dateNaissance": "1995-01-01",
+                    "adopte": false
+                },
+                {
+                    "prenom": "Enfant4",
+                    "nom": "Mulet",
+                    "dateNaissance": "1998-01-01",
+                    "adopte": false
+                }
+            ]
+        },
+        "periodesStockees": [
+            {
+                "id": 1,
+                "debut": "1978-01-01",
+                "fin": "1978-12-31",
+                "type": "TRAVAIL",
+                "salaire": 350,
+                "salaireEuro": 53.36,
+                "devise": "FRF",
+                "valide": true
+            },
+            {
+                "id": 2,
+                "debut": "1979-01-01",
+                "fin": "1979-12-31",
+                "type": "TRAVAIL",
+                "salaire": 3397,
+                "salaireEuro": 517.87,
+                "devise": "FRF",
+                "valide": true
+            },
+            {
+                "id": 3,
+                "debut": "1980-01-01",
+                "fin": "1980-12-31",
+                "type": "TRAVAIL",
+                "salaire": 18210,
+                "salaireEuro": 2776.1,
+                "devise": "FRF",
+                "valide": true
+            },
+            {
+                "id": 4,
+                "debut": "1981-01-01",
+                "fin": "1981-12-31",
+                "type": "TRAVAIL",
+                "salaire": 34279,
+                "salaireEuro": 5225.8,
+                "devise": "FRF",
+                "valide": true
+            },
+            {
+                "id": 5,
+                "debut": "1982-01-01",
+                "fin": "1982-12-31",
+                "type": "TRAVAIL",
+                "salaire": 53080,
+                "salaireEuro": 8091.99,
+                "devise": "FRF",
+                "valide": true
+            },
+            {
+                "id": 6,
+                "debut": "1983-01-01",
+                "fin": "1983-12-31",
+                "type": "TRAVAIL",
+                "salaire": 52516,
+                "salaireEuro": 8006.01,
+                "devise": "FRF",
+                "valide": true
+            },
+            {
+                "id": 7,
+                "debut": "1984-01-01",
+                "fin": "1984-12-31",
+                "type": "TRAVAIL",
+                "salaire": 51866,
+                "salaireEuro": 7906.92,
+                "devise": "FRF",
+                "valide": true
+            },
+            {
+                "id": 8,
+                "debut": "1985-01-01",
+                "fin": "1985-12-31",
+                "type": "TRAVAIL",
+                "salaire": 63179,
+                "salaireEuro": 9631.58,
+                "devise": "FRF",
+                "valide": true
+            },
+            {
+                "id": 9,
+                "debut": "1986-01-01",
+                "fin": "1986-12-31",
+                "type": "TRAVAIL",
+                "salaire": 67010,
+                "salaireEuro": 10215.61,
+                "devise": "FRF",
+                "valide": true
+            },
+            {
+                "id": 10,
+                "debut": "1987-01-01",
+                "fin": "1987-12-31",
+                "type": "TRAVAIL",
+                "salaire": 74433,
+                "salaireEuro": 11347.24,
+                "devise": "FRF",
+                "valide": true
+            },
+            {
+                "id": 11,
+                "debut": "1988-01-01",
+                "fin": "1988-12-31",
+                "type": "TRAVAIL",
+                "salaire": 76126,
+                "salaireEuro": 11605.33,
+                "devise": "FRF",
+                "valide": true
+            },
+            {
+                "id": 12,
+                "debut": "1989-01-01",
+                "fin": "1989-12-31",
+                "type": "TRAVAIL",
+                "salaire": 79285,
+                "salaireEuro": 12086.92,
+                "devise": "FRF",
+                "valide": true
+            },
+            {
+                "id": 13,
+                "debut": "1990-01-01",
+                "fin": "1990-12-31",
+                "type": "TRAVAIL",
+                "salaire": 87260,
+                "salaireEuro": 13302.7,
+                "devise": "FRF",
+                "valide": true
+            },
+            {
+                "id": 14,
+                "debut": "1991-01-01",
+                "fin": "1991-12-31",
+                "type": "TRAVAIL",
+                "salaire": 92965,
+                "salaireEuro": 14172.42,
+                "devise": "FRF",
+                "valide": true
+            },
+            {
+                "id": 15,
+                "debut": "1992-01-01",
+                "fin": "1992-12-31",
+                "type": "TRAVAIL",
+                "salaire": 56250,
+                "salaireEuro": 8575.26,
+                "devise": "FRF",
+                "valide": true
+            },
+            {
+                "id": 16,
+                "debut": "1993-01-01",
+                "fin": "1993-12-31",
+                "type": "TRAVAIL",
+                "salaire": 97615,
+                "salaireEuro": 14881.31,
+                "devise": "FRF",
+                "valide": true
+            },
+            {
+                "id": 17,
+                "debut": "1994-01-01",
+                "fin": "1994-12-31",
+                "type": "TRAVAIL",
+                "salaire": 104457,
+                "salaireEuro": 15924.37,
+                "devise": "FRF",
+                "valide": true
+            },
+            {
+                "id": 18,
+                "debut": "1995-01-01",
+                "fin": "1995-12-31",
+                "type": "TRAVAIL",
+                "salaire": 50553,
+                "salaireEuro": 7706.76,
+                "devise": "FRF",
+                "valide": true
+            },
+            {
+                "id": 19,
+                "debut": "1996-01-01",
+                "fin": "1996-12-31",
+                "type": "TRAVAIL",
+                "salaire": 84466,
+                "salaireEuro": 12876.76,
+                "devise": "FRF",
+                "valide": true
+            },
+            {
+                "id": 20,
+                "debut": "1997-01-01",
+                "fin": "1997-12-31",
+                "type": "TRAVAIL",
+                "salaire": 102515,
+                "salaireEuro": 15628.31,
+                "devise": "FRF",
+                "valide": true
+            },
+            {
+                "id": 21,
+                "debut": "1998-01-01",
+                "fin": "1998-12-31",
+                "type": "TRAVAIL",
+                "salaire": 100413,
+                "salaireEuro": 15307.86,
+                "devise": "FRF",
+                "valide": true
+            },
+            {
+                "id": 22,
+                "debut": "1999-01-01",
+                "fin": "1999-12-31",
+                "type": "TRAVAIL",
+                "salaire": 100024,
+                "salaireEuro": 15248.56,
+                "devise": "FRF",
+                "valide": true
+            },
+            {
+                "id": 23,
+                "debut": "2000-01-01",
+                "fin": "2000-12-31",
+                "type": "TRAVAIL",
+                "salaire": 114148,
+                "salaireEuro": 17401.75,
+                "devise": "FRF",
+                "valide": true
+            },
+            {
+                "id": 24,
+                "debut": "2001-01-01",
+                "fin": "2001-12-31",
+                "type": "TRAVAIL",
+                "salaire": 106693,
+                "salaireEuro": 16265.24,
+                "devise": "FRF",
+                "valide": true
+            },
+            {
+                "id": 25,
+                "debut": "2002-01-01",
+                "fin": "2002-12-31",
+                "type": "TRAVAIL",
+                "salaire": 17592,
+                "salaireEuro": 17592,
+                "devise": "EUR",
+                "valide": true
+            },
+            {
+                "id": 26,
+                "debut": "2003-01-01",
+                "fin": "2003-12-31",
+                "type": "TRAVAIL",
+                "salaire": 19372,
+                "salaireEuro": 19372,
+                "devise": "EUR",
+                "valide": true
+            },
+            {
+                "id": 27,
+                "debut": "2004-01-01",
+                "fin": "2004-12-31",
+                "type": "TRAVAIL",
+                "salaire": 21569,
+                "salaireEuro": 21569,
+                "devise": "EUR",
+                "valide": true
+            },
+            {
+                "id": 28,
+                "debut": "2005-01-01",
+                "fin": "2005-12-31",
+                "type": "TRAVAIL",
+                "salaire": 22083,
+                "salaireEuro": 22083,
+                "devise": "EUR",
+                "valide": true
+            },
+            {
+                "id": 29,
+                "debut": "2006-01-01",
+                "fin": "2006-12-31",
+                "type": "TRAVAIL",
+                "salaire": 23663,
+                "salaireEuro": 23663,
+                "devise": "EUR",
+                "valide": true
+            },
+            {
+                "id": 30,
+                "debut": "2007-01-01",
+                "fin": "2007-12-31",
+                "type": "TRAVAIL",
+                "salaire": 29043,
+                "salaireEuro": 29043,
+                "devise": "EUR",
+                "valide": true
+            },
+            {
+                "id": 31,
+                "debut": "2008-01-01",
+                "fin": "2008-12-31",
+                "type": "TRAVAIL",
+                "salaire": 29092,
+                "salaireEuro": 29092,
+                "devise": "EUR",
+                "valide": true
+            },
+            {
+                "id": 32,
+                "debut": "2009-01-01",
+                "fin": "2009-12-31",
+                "type": "TRAVAIL",
+                "salaire": 26656,
+                "salaireEuro": 26656,
+                "devise": "EUR",
+                "valide": true
+            },
+            {
+                "id": 33,
+                "debut": "2010-01-01",
+                "fin": "2010-12-31",
+                "type": "TRAVAIL",
+                "salaire": 31543,
+                "salaireEuro": 31543,
+                "devise": "EUR",
+                "valide": true
+            },
+            {
+                "id": 34,
+                "debut": "2011-01-01",
+                "fin": "2011-12-31",
+                "type": "TRAVAIL",
+                "salaire": 30828,
+                "salaireEuro": 30828,
+                "devise": "EUR",
+                "valide": true
+            },
+            {
+                "id": 35,
+                "debut": "2012-01-01",
+                "fin": "2012-12-31",
+                "type": "TRAVAIL",
+                "salaire": 30679,
+                "salaireEuro": 30679,
+                "devise": "EUR",
+                "valide": true
+            },
+            {
+                "id": 36,
+                "debut": "2013-01-01",
+                "fin": "2013-12-31",
+                "type": "TRAVAIL",
+                "salaire": 31533,
+                "salaireEuro": 31533,
+                "devise": "EUR",
+                "valide": true
+            },
+            {
+                "id": 37,
+                "debut": "2014-01-01",
+                "fin": "2014-12-31",
+                "type": "TRAVAIL",
+                "salaire": 31189,
+                "salaireEuro": 31189,
+                "devise": "EUR",
+                "valide": true
+            },
+            {
+                "id": 38,
+                "debut": "2015-01-01",
+                "fin": "2015-12-31",
+                "type": "TRAVAIL",
+                "salaire": 37365,
+                "salaireEuro": 37365,
+                "devise": "EUR",
+                "valide": true
+            },
+            {
+                "id": 39,
+                "debut": "2016-01-01",
+                "fin": "2016-12-31",
+                "type": "TRAVAIL",
+                "salaire": 21877,
+                "salaireEuro": 21877,
+                "devise": "EUR",
+                "valide": true
+            },
+            {
+                "id": 40,
+                "debut": "2017-01-01",
+                "fin": "2017-12-31",
+                "type": "TRAVAIL",
+                "salaire": 29272,
+                "salaireEuro": 29272,
+                "devise": "EUR",
+                "valide": true
+            },
+            {
+                "id": 41,
+                "debut": "2018-01-01",
+                "fin": "2018-12-31",
+                "type": "TRAVAIL",
+                "salaire": 35142,
+                "salaireEuro": 35142,
+                "devise": "EUR",
+                "valide": true
+            },
+            {
+                "id": 42,
+                "debut": "2019-01-01",
+                "fin": "2019-12-31",
+                "type": "TRAVAIL",
+                "salaire": 23777,
+                "salaireEuro": 23777,
+                "devise": "EUR",
+                "valide": true
+            },
+            {
+                "id": 43,
+                "debut": "2020-01-01",
+                "fin": "2020-12-31",
+                "type": "TRAVAIL",
+                "salaire": 34280,
+                "salaireEuro": 34280,
+                "devise": "EUR",
+                "valide": true
+            },
+            {
+                "id": 44,
+                "debut": "2021-01-01",
+                "fin": "2021-12-31",
+                "type": "TRAVAIL",
+                "salaire": 37200,
+                "salaireEuro": 37200,
+                "devise": "EUR",
+                "valide": true
+            },
+            {
+                "id": 45,
+                "debut": "2022-01-01",
+                "fin": "2022-12-31",
+                "type": "TRAVAIL",
+                "salaire": 28400,
+                "salaireEuro": 28400,
                 "devise": "EUR",
                 "valide": true
             }
