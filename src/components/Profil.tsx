@@ -17,7 +17,6 @@ interface User {
     sexe?: string;
     handicape?: boolean;
     enfants?: Enfant[];
-    statut?: string;
 }
 
 export default function Profil() {
@@ -35,7 +34,6 @@ export default function Profil() {
                 sexe: parsed.sexe || "",
                 handicape: parsed.handicape || false,
                 enfants: parsed.enfants || [],
-                statut: "Retraité",
             });
         }
     }, []);
@@ -57,7 +55,6 @@ export default function Profil() {
                         <p><strong>Prénom :</strong> {user.prenom}</p>
                         <p><strong>Date de naissance :</strong> {user.dateNaissance}</p>
                         <p><strong>Sexe :</strong> {user.sexe}</p>
-                        <p><strong>Statut :</strong> {user.statut}</p>
                         <p>
                             <strong>Handicap :</strong> {user.handicape ? "Travailleur handicapé" : "Travailleur non handicapé"}
                         </p>
