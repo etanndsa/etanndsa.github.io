@@ -1,5 +1,5 @@
 // =============================================================================
-// 1. CONSTANTES & CONFIGURATION (Rien ne change ici)
+// 1. CONSTANTES & CONFIGURATION
 // =============================================================================
 export const FRF_TO_EUR = 1 / 6.55957;
 export const TAUX_PLEIN = 0.5;
@@ -22,6 +22,8 @@ export const PASS_PAR_ANNEE: Record<number, number> = {
 };
 
 export const SMIC_HORAIRE_PAR_ANNEE: Record<number, number> = {
+    1970: 0.50, 1971: 0.55, 1972: 0.61, 1973: 0.69, 1974: 0.82,
+    1975: 1.00, 1976: 1.15, 1977: 1.30, 1978: 1.45, 1979: 1.63,
     1980: 2.1343, 1981: 2.5855, 1982: 3.0934, 1983: 3.4820, 1984: 4.0539,
     1985: 4.2033, 1986: 4.3414, 1987: 4.5431, 1988: 4.6525, 1989: 4.7689,
     1990: 4.9791, 1991: 5.0615, 1992: 5.1925, 1993: 5.3089, 1994: 5.4219,
@@ -56,7 +58,7 @@ export const AGE_LEGAL_PAR_NAISSANCE: Record<number, number> = {
 };
 
 // =============================================================================
-// 2. INTERFACES MISES À JOUR (Pour matcher ton UI)
+// 2. INTERFACES
 // =============================================================================
 export interface PeriodInput {
     id?: number | string;
@@ -66,18 +68,23 @@ export interface PeriodInput {
     salaireEuro?: number | null;
     devise?: 'EUR' | 'FRF' | null;
     valide?: boolean;
-
-    // ✅ NOUVEAU : Gestion des types de périodes
-    type?: string; // 'TRAVAIL', 'MALADIE', 'CHOMAGE', etc.
-    trimestresAssimiles?: number; // Nombre de trimestres forcés pour les périodes assimilées
+    type?: string;
+    trimestresAssimiles?: number;
 }
 
 export interface PersonInfo {
     dateNaissance: string;
+    sexe: 'Homme' | 'Femme';
     handicape?: boolean;
-    // ✅ NOUVEAU : Gestion du militaire
+    // ✅ Récupération de la date saisie dans ton nouveau formulaire
+    handicapeDepuis?: string; 
     militaire?: boolean;
-    enfants?: Array<{ dateNaissance: string; adopte?: boolean; adoptionAnnee?: number }>;
+    enfants?: Array<{ 
+        dateNaissance: string; 
+        adopte?: boolean; 
+        adoptionAnnee?: number;
+        trimestresAttribution?: number; 
+    }>;
     ageDepartSouhaite: string;
 }
 
@@ -93,6 +100,7 @@ export interface RetraiteResult {
     pensionMensuelleBrute: number;
     pensionMensuelleNette: number;
     details: any;
+    trimestresSurcote: number;
 }
 
 // =============================================================================
@@ -116,22 +124,21 @@ function getAgeLegal(anneeNaissance: number) {
     return AGE_LEGAL_PAR_NAISSANCE[anneeNaissance] ?? 64;
 }
 
-// Calcul des trimestres validés par le SALAIRE (150 x SMIC)
 export function calcTrimestresForYear(salaireAnnuel: number, year: number): number {
     const smicHoraire = SMIC_HORAIRE_PAR_ANNEE[year];
     if (!smicHoraire || smicHoraire <= 0) return 0;
 
-    // Règle : 150 heures de SMIC = 1 trimestre
-    const seuil = 150 * smicHoraire;
+    // Règle historique SMIC
+    const heuresRequises = year < 2014 ? 200 : 150;
+    const seuil = heuresRequises * smicHoraire;
+
     return Math.min(4, Math.floor(salaireAnnuel / seuil));
 }
 
-// Distribution du salaire sur les années (prorata temporis)
 function distributePeriodSalaryByYear(p: PeriodInput): Record<number, number> {
     const out: Record<number, number> = {};
     if (p.salaire == null && p.salaireEuro == null) return out;
 
-    // On utilise salaireEuro s'il existe, sinon on convertit
     const totalEuro = p.salaireEuro != null ? p.salaireEuro : (p.salaire != null ? (p.devise === 'FRF' ? p.salaire * FRF_TO_EUR : p.salaire) : 0);
     if (!totalEuro || totalEuro <= 0) return out;
 
@@ -156,7 +163,6 @@ function distributePeriodSalaryByYear(p: PeriodInput): Record<number, number> {
     return out;
 }
 
-// Chargement des salaires carrière longue (Utilitaire demandé précédemment)
 export function loadSalairesAvant20EnEuro(): Record<number, number> {
     const raw = localStorage.getItem("salairesAvant20") || "{}";
     let parsed: Record<string, { amount: number; devise: "EUR" | "FRF" }> = {};
@@ -195,68 +201,84 @@ export function detectCarriereLongueEligibility(dateNaissance: string) {
 }
 
 // =============================================================================
-// 4. CŒUR DU CALCUL : TRAVAIL + ASSIMILÉS + PLAFOND 4
+// 4. CALCUL SAM ET TRIMESTRES PAR ANNÉE
 // =============================================================================
 export function computeSamAndTrimestresByYear(periods: PeriodInput[]) {
     const annualSalaries: Record<number, number> = {};
-    const annualAssimiles: Record<number, number> = {}; // Stocke les trimestres forcés (Maladie/Chômage)
+    const annualAssimiles: Record<number, number> = {};
 
-    // 1. On parcourt toutes les périodes
+    // 1. Traitement des périodes classiques
     for (const p of periods) {
         if (!p.valide) continue;
-
         const startYear = parseInt(p.debut.substring(0, 4));
-        const type = p.type || 'TRAVAIL'; // Défaut TRAVAIL si non spécifié
+        const type = p.type || 'TRAVAIL';
 
         if (type === 'TRAVAIL') {
-            // Cas TRAVAIL : On distribue le salaire sur les années
             const salMap = distributePeriodSalaryByYear(p);
             for (const yearKey of Object.keys(salMap)) {
                 const year = Number(yearKey);
                 annualSalaries[year] = (annualSalaries[year] || 0) + salMap[year];
             }
         } else {
-            // Cas ASSIMILÉ (Maladie, Chômage) : On ajoute les trimestres directement
-            // Note : On attribue tout à l'année de début pour simplifier, 
-            // ou on pourrait faire une distribution temporelle si p.fin >> p.debut
             if (p.trimestresAssimiles && p.trimestresAssimiles > 0) {
                 annualAssimiles[startYear] = (annualAssimiles[startYear] || 0) + p.trimestresAssimiles;
             }
         }
     }
 
-    // 2. On liste toutes les années concernées
-    const yearsSet = new Set([...Object.keys(annualSalaries), ...Object.keys(annualAssimiles)].map(Number));
+    // 2. Chargement Carrière Longue
+    const salairesCL = loadSalairesAvant20EnEuro();
+
+    // 3. Fusion
+    const yearsSet = new Set([
+        ...Object.keys(annualSalaries).map(Number),
+        ...Object.keys(annualAssimiles).map(Number),
+        ...Object.keys(salairesCL).map(Number)
+    ]);
     const years = Array.from(yearsSet).sort((a, b) => a - b);
 
     const perYear: { year: number, salaireRaw: number, salairePlafonne: number, salaireRevalo: number, trimestres: number }[] = [];
 
+    console.log("--- 📊 DÉTAIL CALCUL TRIMESTRES PAR ANNÉE ---");
+
     for (const y of years) {
-        // A. Calcul via l'argent (Salaire)
-        const salaire = annualSalaries[y] || 0;
+        const salaireTravail = annualSalaries[y] || 0;
+        const salaireCL = salairesCL[y] || 0;
+        
+        const salaireTotal = salaireTravail + salaireCL;
+
         const pass = PASS_PAR_ANNEE[y] ?? Infinity;
-        const salairePlaf = Math.min(salaire, pass);
+        const salairePlaf = Math.min(salaireTotal, pass);
         const coef = COEF_REVALO[y] ?? 1;
         const salaireRevalo = salairePlaf * coef;
 
-        const trimestresArgent = calcTrimestresForYear(salaire, y);
+        const trimestresArgentTotal = calcTrimestresForYear(salaireTotal, y);
+        
+        // Pour le log
+        const trimestresViaCL = calcTrimestresForYear(salaireCL, y);
+        const trimestresViaTravail = calcTrimestresForYear(salaireTravail, y);
 
-        // B. Ajout via le temps (Assimilés)
         const trimestresForce = annualAssimiles[y] || 0;
+        const trimestresFinal = Math.min(4, trimestresArgentTotal + trimestresForce);
 
-        // C. ✅ RÈGLE D'OR : Plafonner le total (Travail + Maladie) à 4 par an
-        const trimestres = Math.min(4, trimestresArgent + trimestresForce);
+        if (trimestresFinal > 0 || salaireTotal > 0) {
+            console.log(
+                `📅 Année ${y} : ${trimestresFinal} validés total.` +
+                `\n   ├─ 👶 Carrière Longue : ${Math.round(salaireCL)}€ (= ${trimestresViaCL} tri)` +
+                `\n   ├─ 💼 Travail Standard : ${Math.round(salaireTravail)}€ (= ${trimestresViaTravail} tri)` +
+                `\n   └─ 🏥 Assimilés (Chom/Mal) : ${trimestresForce} tri`
+            );
+        }
 
-        perYear.push({ year: y, salaireRaw: salaire, salairePlafonne: salairePlaf, salaireRevalo, trimestres });
+        perYear.push({ year: y, salaireRaw: salaireTotal, salairePlafonne: salairePlaf, salaireRevalo, trimestres: trimestresFinal });
     }
+    
+    console.log("--- FIN CALCUL ---");
 
-    // 3. Calcul du SAM (25 meilleures années)
-    // On ne garde que les années ayant un salaire > 0 pour le calcul du SAM (la maladie à 0€ n'entre pas dans la moyenne)
     const validYearsForSam = perYear.filter(p => p.salaireRaw > 0);
     const top25 = validYearsForSam.sort((a, b) => b.salaireRevalo - a.salaireRevalo).slice(0, 25);
     const sam = top25.length > 0 ? (top25.reduce((s, a) => s + a.salaireRevalo, 0) / 25) : 0;
 
-    // 4. Total des trimestres acquis
     const trimestresParAnnee: Record<number, number> = {};
     let trimestresTotal = 0;
     for (const p of perYear) {
@@ -267,29 +289,31 @@ export function computeSamAndTrimestresByYear(periods: PeriodInput[]) {
     return { sam: Math.round(sam * 100) / 100, trimestresParAnnee, trimestresAcquis: trimestresTotal, perYear };
 }
 
-
 // =============================================================================
-// 5. FONCTION PRINCIPALE EXPORTÉE
+// 5. FONCTION PRINCIPALE DE CALCUL RETRAITE
 // =============================================================================
 export function calculateRetraiteFromPeriods(person: PersonInfo, periods: PeriodInput[], dateRetraiteSouhaitee: string): RetraiteResult {
 
-    // 1) Calcul SAM et Trimestres "De base" (Travail + Assimilés annuels)
+    // 1) Calcul SAM et Trimestres "De base"
     const { sam, trimestresParAnnee, trimestresAcquis, perYear } = computeSamAndTrimestresByYear(periods);
 
     // 2) Majoration Enfants
     const enfants = person.enfants || [];
     let trimestresMajoration = 0;
+    
+    const estFemme = person.sexe === 'Femme';
+
     for (const e of enfants) {
-        if (e.dateNaissance) {
-            if (toDate(e.dateNaissance) < toDate(dateRetraiteSouhaitee)) {
-                // Simplification : 8 trimestres par enfant né/adopté avant la retraite
-                trimestresMajoration += 8;
+        if (e.dateNaissance && toDate(e.dateNaissance) < toDate(dateRetraiteSouhaitee)) {
+            if (estFemme) {
+                trimestresMajoration += (e.trimestresAttribution !== undefined) ? e.trimestresAttribution : 8;
+            } else {
+                trimestresMajoration += (e.trimestresAttribution || 0); 
             }
         }
     }
 
-    // 3) ✅ Majoration Service Militaire (Forfaitaire)
-    // Si la case "J'ai fait mon service" est cochée, on ajoute 4 trimestres
+    // 3) Majoration Service Militaire
     let trimestresService = 0;
     if (person.militaire) {
         trimestresService = 4;
@@ -307,59 +331,84 @@ export function calculateRetraiteFromPeriods(person: PersonInfo, periods: Period
     const ageDepartFraction = ageInYearsFraction(person.dateNaissance, dateRetraiteSouhaitee);
     const ecart = trimestresTotal - trimestresRequis;
 
-    // Plafond surcote : on ne surcote que les trimestres travaillés APRÈS l'âge légal
     const trimestresApresAgeLegal = Math.max(0, Math.floor((ageDepartFraction - ageLegal) * 4));
     const surcoteTrimestres = Math.min(Math.max(0, ecart), trimestresApresAgeLegal);
 
     let taux = TAUX_PLEIN;
 
-    // Calcul Décote
-    if (ecart < 0) {
+    // Gestion Carrière Longue (Annulation décote)
+    const carriereLongue = detectCarriereLongueEligibility(person.dateNaissance);
+
+    // Calcul Décote (Sauf si carrière longue ou handicapé)
+    if (ecart < 0 && !carriereLongue.eligibleEarly && !person.handicape) {
         const trimestresManquants = Math.abs(ecart);
         const decote = trimestresManquants * DECOTE_PAR_TRIMESTRE;
-        // Plancher décote (max 12 trimestres de pénalité)
         taux = Math.max(TAUX_PLEIN - decote, TAUX_PLEIN - (12 * DECOTE_PAR_TRIMESTRE));
     }
 
-    // Calcul Surcote
+    let coefSurcote = 1.0;
     if (surcoteTrimestres > 0) {
-        taux += surcoteTrimestres * SURCOTE_PAR_TRIMESTRE;
+        coefSurcote = 1 + (surcoteTrimestres * 0.0125); 
     }
 
-    // Gestion Carrière Longue (Annulation décote)
-    const carriereLongue = detectCarriereLongueEligibility(person.dateNaissance);
-    if (carriereLongue.eligibleEarly && ecart < 0) {
-        taux = TAUX_PLEIN; // Pas de décote si carrière longue
-    }
-
-    // 7) Proratisation (Ratio Durée)
-    // On ne peut pas dépasser 1 (si on a trop de trimestres, le ratio reste 1, c'est la surcote qui joue)
+    // 7) Proratisation
     const ratio = Math.min(trimestresTotal / trimestresRequis, 1);
 
     // 8) Calcul final Pension
     const anneeDepart = toDate(dateRetraiteSouhaitee).getFullYear();
     const passDepart = PASS_PAR_ANNEE[anneeDepart] ?? PASS_PAR_ANNEE[2024] ?? 47100;
 
-    // Formule de base : SAM * Taux * Ratio
-    const pensionBase = sam * Math.min(taux, TAUX_PLEIN) * ratio;
+    const tauxBase = Math.min(taux, TAUX_PLEIN); 
+    
+    const pensionBase = sam * tauxBase * ratio;
+    
+    let pensionAnnuelleBrute = pensionBase * coefSurcote;
 
-    // Plafonnement de la pension de base à 50% du PASS
-    const pensionPlafonnee = Math.min(pensionBase, passDepart * TAUX_PLEIN);
-
-    // Ajout du montant de la surcote (calculée sur le SAM, vient EN PLUS du plafond)
-    const montantSurcote = sam * Math.max(0, taux - TAUX_PLEIN) * ratio;
-
-    let pensionAnnuelleBrute = pensionPlafonnee + montantSurcote;
+    // Plafonnement au PASS
+    const plafondPension = passDepart * TAUX_PLEIN;
+    if (pensionBase > plafondPension) {
+         pensionAnnuelleBrute = plafondPension * coefSurcote;
+    }
 
     // Majoration 10% pour 3 enfants
     if ((enfants.length || 0) >= 3) {
         pensionAnnuelleBrute *= 1.10;
     }
 
-    // Majoration Handicap (simplifié)
-    if (person.handicape && trimestresAcquis >= trimestresRequis) {
-        pensionAnnuelleBrute *= (1 + (trimestresAcquis / trimestresRequis) / 3);
+    // -------------------------------------------------------------------------
+    // ✅ 9) MAJORATION HANDICAP (Calcul Automatique via date)
+    // -------------------------------------------------------------------------
+    if (person.handicape && trimestresAcquis >= trimestresRequis) { // Condition souvent exigée (durée cotisée minimale)
+        let trimestresHandicap = 0;
+
+        // Si une date est saisie, on l'utilise pour filtrer les trimestres
+        if (person.handicapeDepuis) {
+            const anneeDebutHandicap = parseInt(person.handicapeDepuis);
+            
+            // On additionne les trimestres acquis UNIQUEMENT pour les années >= année du handicap
+            for (const yearData of perYear) {
+                if (yearData.year >= anneeDebutHandicap) {
+                    trimestresHandicap += yearData.trimestres;
+                }
+            }
+            console.log(`♿ Calcul Handicap : Handicap depuis ${anneeDebutHandicap}. Trimestres retenus : ${trimestresHandicap}`);
+        } else {
+            // Fallback : si pas de date, on prend tout (comme avant)
+            trimestresHandicap = trimestresAcquis;
+        }
+
+        // Formule de majoration : Pension * (1 + 1/3 * (Durée Handicap / Durée Requise))
+        const ratioMajoration = (1 + (trimestresHandicap / trimestresRequis) / 3);
+        pensionAnnuelleBrute *= ratioMajoration;
+
+        const pensionMaximumTheorique = sam * TAUX_PLEIN;
+        
+        if (pensionAnnuelleBrute > pensionMaximumTheorique) {
+            pensionAnnuelleBrute = pensionMaximumTheorique;
+            console.log(`⚠️ Pension majorée (${Math.round(pensionAnnuelleBrute)}€) plafonnée au Max Théorique (${Math.round(pensionMaximumTheorique)}€)`);
+        }
     }
+    // -------------------------------------------------------------------------
 
     const pensionMensuelleBrute = pensionAnnuelleBrute / 12;
     const pensionMensuelleNette = pensionMensuelleBrute * (1 - RETENUES_SOCIALES);
@@ -368,13 +417,14 @@ export function calculateRetraiteFromPeriods(person: PersonInfo, periods: Period
         sam: Math.round(sam * 100) / 100,
         trimestresParAnnee,
         trimestresAcquis,
-        trimestresMajoration: trimestresMajoration + trimestresService, // On englobe le service ici pour l'affichage
+        trimestresMajoration: trimestresMajoration + trimestresService,
         trimestresTotal,
         trimestresRequis,
         tauxEffectif: Math.round(taux * 100000) / 1000,
         pensionAnnuelleBrute: Math.round(pensionAnnuelleBrute * 100) / 100,
         pensionMensuelleBrute: Math.round(pensionMensuelleBrute * 100) / 100,
         pensionMensuelleNette: Math.round(pensionMensuelleNette * 100) / 100,
-        details: { perYear }
+        details: { perYear },
+        trimestresSurcote: surcoteTrimestres
     } as RetraiteResult;
 }

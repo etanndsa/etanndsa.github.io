@@ -50,6 +50,7 @@ export default function MaRetraite() {
             const person = {
                 dateNaissance: mesInfos.dateNaissance,
                 handicape: mesInfos.handicape ?? false,
+                sexe: mesInfos.sexe,
                 militaire: mesInfos.militaire ?? false, // Ajout gestion militaire
                 enfants: mesInfos.enfants ?? [],
                 ageDepartSouhaite: date
@@ -76,8 +77,9 @@ export default function MaRetraite() {
     const trimestresAcquis = resultat?.trimestresTotal ?? 0;
     const trimestresRequis = resultat?.trimestresRequis ?? 0;
     const taux = resultat?.tauxEffectif ?? 0;
-    const manque = trimestresRequis - trimestresAcquis;
-    
+    const vraisTrimestresSurcote = resultat?.trimestresSurcote ?? 0;
+    const manque = Math.max(0, trimestresRequis - trimestresAcquis);
+
     // Calcul dynamique pour la retraite progressive
     const pensionProgressiveNette = (pensionNette100 * pourcentageRetraite) / 100;
 
@@ -92,43 +94,56 @@ export default function MaRetraite() {
 
             {confirmedDate && (
                 <div className="w-full max-w-2xl bg-green-50 border border-green-200 text-green-800 p-3 rounded-lg text-center">
-                    ✅ Date confirmée : <strong>{confirmedDate}</strong>
+                    Date confirmée : <strong>{confirmedDate}</strong>
                 </div>
             )}
 
             {resultat && (
                 <div className="w-full max-w-3xl space-y-6">
-                    
+
                     {/* BLOC 1 : LE TEXTE EXPLICATIF (ANALYSE) */}
                     <div className="bg-white p-6 rounded-xl shadow-md border-l-4 border-purple-600">
-                        <h3 className="text-xl font-bold text-gray-800 mb-4">📊 Analyse de votre situation</h3>
-                        
+                        <h3 className="text-xl font-bold text-gray-800 mb-4">Analyse de votre situation</h3>
+
                         <div className="text-gray-700 space-y-3 text-lg">
                             <p>
                                 Pour un départ le <strong>{confirmedDate}</strong>, votre pension de base du Régime Général est estimée à :
                             </p>
-                            
+
                             <div className="text-3xl font-bold text-purple-700 my-2">
                                 {pensionNette100.toFixed(2)} € <span className="text-sm font-normal text-gray-500">nets / mois</span>
                             </div>
-                            
-                            <hr className="my-4"/>
+
+                            <hr className="my-4" />
 
                             <p>
-                                <strong>Situation des trimestres :</strong> Vous avez validé <strong>{trimestresAcquis}</strong> trimestres 
+                                <strong>Situation des trimestres :</strong> Vous avez validé <strong>{trimestresAcquis}</strong> trimestres
                                 sur les <strong>{trimestresRequis}</strong> requis pour votre génération.
                             </p>
 
                             {manque > 0 ? (
                                 <div className="bg-orange-50 p-4 rounded-lg border border-orange-200 text-orange-800">
-                                    ⚠️ <strong>Attention :</strong> Il vous manque <strong>{manque} trimestre{manque > 1 ? "s" : ""}</strong> pour obtenir le taux plein. 
-                                    <br/>
-                                    Une <strong>décote</strong> définitive est appliquée sur votre pension (Votre taux est de {(taux*100).toFixed(3)}% au lieu de 50%).
+                                    <strong>Attention :</strong> Il vous manque <strong>{manque} trimestre{manque > 1 ? "s" : ""}</strong> pour obtenir le taux plein.
+                                    <br />
+                                    Une <strong>décote</strong> définitive est appliquée.
                                 </div>
                             ) : (
                                 <div className="bg-green-50 p-4 rounded-lg border border-green-200 text-green-800">
-                                    ✅ <strong>Félicitations !</strong> Vous avez atteint le <strong>taux plein</strong> (50%).
-                                    {manque < 0 && <span> Vous avez même {Math.abs(manque)} trimestre(s) de surcote !</span>}
+                                    <strong>Félicitations !</strong> Vous avez atteint le <strong>taux plein</strong> (50%).
+
+                                    {/* On utilise ici la VRAIE variable de surcote */}
+                                    {vraisTrimestresSurcote > 0 ? (
+                                        <span>
+                                            <br />
+                                            Bonus : Vous bénéficiez d'une <strong>surcote</strong> grâce à <strong>{vraisTrimestresSurcote} trimestre(s)</strong> cotisé(s) après l'âge légal !
+                                        </span>
+                                    ) : (
+                                        trimestresAcquis > trimestresRequis && (
+                                            <span className="text-sm block mt-1 text-green-700 opacity-80">
+                                                (Vous avez {trimestresAcquis - trimestresRequis} trimestres d'excédent, mais qui ne comptent pas pour la surcote car acquis avant l'âge légal ou via majorations).
+                                            </span>
+                                        )
+                                    )}
                                 </div>
                             )}
                         </div>
@@ -137,12 +152,12 @@ export default function MaRetraite() {
                     {/* BLOC 2 : SIMULATEUR RETRAITE PROGRESSIVE */}
                     <div className="bg-white p-6 rounded-xl shadow-md border-l-4 border-blue-500">
                         <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-                            ⚖️ Option : Retraite Progressive
+                            Option : Retraite Progressive
                         </h3>
-                        
+
                         <p className="text-gray-600 mb-4">
                             Si vous souhaitez continuer à travailler à temps partiel, vous pouvez percevoir une fraction de votre retraite.
-                            <br/><em>Sélectionnez la part de retraite que vous souhaitez toucher :</em>
+                            <br /><em>Sélectionnez la part de retraite que vous souhaitez toucher :</em>
                         </p>
 
                         {/* Boutons de sélection */}
@@ -151,11 +166,10 @@ export default function MaRetraite() {
                                 <button
                                     key={pct}
                                     onClick={() => setPourcentageRetraite(pct)}
-                                    className={`px-4 py-2 rounded-full font-medium transition ${
-                                        pourcentageRetraite === pct 
-                                        ? "bg-blue-600 text-white shadow-lg scale-105" 
-                                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                                    }`}
+                                    className={`px-4 py-2 rounded-full font-medium transition ${pourcentageRetraite === pct
+                                            ? "bg-blue-600 text-white shadow-lg scale-105"
+                                            : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                                        }`}
                                 >
                                     {pct === 100 ? "Retraite Totale (100%)" : `${pct}% Pension`}
                                 </button>
@@ -184,6 +198,7 @@ export default function MaRetraite() {
                             <li>Pension Brute (100%) : {pensionBrute100.toFixed(2)} €</li>
                             <li>Trimestres Cotisés : {resultat.trimestresAcquis}</li>
                             <li>Majoration (Enfants/Service) : {resultat.trimestresMajoration}</li>
+                            <li>Surcote appliquée : {vraisTrimestresSurcote}</li>
                         </ul>
                     </div>
 

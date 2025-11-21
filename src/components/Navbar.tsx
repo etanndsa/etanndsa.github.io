@@ -73,16 +73,39 @@ export default function Navbar() {
 
     function applyProfile(profile: any) {
         try {
-            localStorage.setItem("mesInfos", JSON.stringify(profile.mesInfos || {}));
-            localStorage.setItem("periodesStockees", JSON.stringify(profile.periodesStockees || []));
+            // 1. Nettoyage complet des clés spécifiques à la session
+            // On supprime tout pour éviter les conflits
+            const keysToRemove = [
+                "mesInfos", 
+                "periodesStockees", 
+                "salairesAvant20", 
+                "formRetraite", 
+                "confirmedRetirementDate"
+            ];
+            keysToRemove.forEach(k => localStorage.removeItem(k));
+
+            // 2. Injection des données du profil choisi
             localStorage.setItem("selectedProfileId", String(profile.id));
-            setSelectedProfileId(String(profile.id));
-            // small UX: close dropdown
-            setOpen(false);
-            // notify other components in the same tab to reload from localStorage
-            try { window.dispatchEvent(new Event('profiles-changed')); } catch {}
+            
+            // On s'assure de ne pas mettre "undefined" ou "null" dans le storage
+            if (profile.mesInfos) {
+                localStorage.setItem("mesInfos", JSON.stringify(profile.mesInfos));
+            }
+            if (profile.periodesStockees) {
+                localStorage.setItem("periodesStockees", JSON.stringify(profile.periodesStockees));
+            }
+            // Si tu stockes aussi les salaires carrière longue dans ton profil JSON :
+            if (profile.salairesAvant20) {
+                localStorage.setItem("salairesAvant20", JSON.stringify(profile.salairesAvant20));
+            }
+
+            // 3. RECHARGEMENT DE LA PAGE (Le "Hard Refresh")
+            // Cela va forcer tous les composants (Infos, Retraite, Graphiques) à se réinitialiser
+            window.location.reload();
+
         } catch (err) {
             console.error("Erreur en appliquant le profil", err);
+            alert("Erreur lors du chargement du profil");
         }
     }
 
