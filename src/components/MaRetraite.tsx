@@ -1,6 +1,19 @@
+import { Check } from "lucide-react";
 import { calculateRetraiteFromPeriods } from "../utils/calculRetraite";
 import FormulaireRetraite from "./FormulaireRetraites";
 import { useState, useEffect } from "react";
+
+// Petit utilitaire pour calculer l'âge précis à une date donnée
+function getAge(dateNaissance: string, dateCible: string) {
+    const birth = new Date(dateNaissance);
+    const target = new Date(dateCible);
+    let age = target.getFullYear() - birth.getFullYear();
+    const m = target.getMonth() - birth.getMonth();
+    if (m < 0 || (m === 0 && target.getDate() < birth.getDate())) {
+        age--;
+    }
+    return age;
+}
 
 export default function MaRetraite() {
     const [valeurs, setValeurs] = useState(() => {
@@ -16,16 +29,16 @@ export default function MaRetraite() {
         setValeurs((prev: any) => ({ ...prev, [nom]: valeur }));
     }
 
-    // --- date confirmée ---
     const [confirmedDate, setConfirmedDate] = useState<string | null>(() => {
         return localStorage.getItem("confirmedRetirementDate");
     });
 
-    // --- résultat complet ---
     const [resultat, setResultat] = useState<any | null>(null);
-
-    // --- NOUVEAU : État pour la retraite progressive (par défaut 100% = retraite complète) ---
     const [pourcentageRetraite, setPourcentageRetraite] = useState(100);
+
+    const [estHandicape, setEstHandicape] = useState(false);
+    // On stocke la date de naissance pour le calcul d'âge en temps réel
+    const [dateNaissanceUser, setDateNaissanceUser] = useState<string>("");
 
     async function handleConfirm(date: string) {
         if (!date) {
@@ -37,7 +50,6 @@ export default function MaRetraite() {
         localStorage.setItem("confirmedRetirementDate", date);
 
         try {
-            // récupération données stockées
             const mesInfos = JSON.parse(localStorage.getItem("mesInfos") || "{}");
             const periodes = JSON.parse(localStorage.getItem("periodesStockees") || "[]");
 
@@ -46,21 +58,23 @@ export default function MaRetraite() {
                 return;
             }
 
-            // construction de l'objet PersonInfo attendu par le moteur
+            setEstHandicape(mesInfos.handicape === true);
+            setDateNaissanceUser(mesInfos.dateNaissance);
+
             const person = {
                 dateNaissance: mesInfos.dateNaissance,
                 handicape: mesInfos.handicape ?? false,
+                handicapeDepuis: mesInfos.handicapeDepuis,
                 sexe: mesInfos.sexe,
-                militaire: mesInfos.militaire ?? false, // Ajout gestion militaire
+                militaire: mesInfos.militaire ?? false,
                 enfants: mesInfos.enfants ?? [],
                 ageDepartSouhaite: date
             };
 
-            // appel du nouveau moteur complet CNAV
             const res = calculateRetraiteFromPeriods(person, periodes, date);
 
             setResultat(res);
-            setPourcentageRetraite(100); // Reset à 100% à chaque nouveau calcul
+            setPourcentageRetraite(100);
 
             alert("Calcul effectué !");
         } catch (e) {
@@ -71,17 +85,26 @@ export default function MaRetraite() {
 
     // ---------------- UI ----------------
 
-    // Extraction des données
     const pensionNette100 = resultat?.pensionMensuelleNette ?? 0;
     const pensionBrute100 = resultat?.pensionMensuelleBrute ?? 0;
-    const trimestresAcquis = resultat?.trimestresTotal ?? 0;
+    
+    const trimestresAcquis = resultat?.trimestresAcquis ?? 0;
+    const trimestresCotises = resultat?.trimestresCotises ?? 0;
     const trimestresRequis = resultat?.trimestresRequis ?? 0;
+    
     const taux = resultat?.tauxEffectif ?? 0;
     const vraisTrimestresSurcote = resultat?.trimestresSurcote ?? 0;
+    
+    const estRATH = resultat?.details?.estEligibleRATH ?? false;
+    
     const manque = Math.max(0, trimestresRequis - trimestresAcquis);
 
-    // Calcul dynamique pour la retraite progressive
     const pensionProgressiveNette = (pensionNette100 * pourcentageRetraite) / 100;
+
+    // ✅ CALCUL ÉLIGIBILITÉ RETRAITE PROGRESSIVE
+    // Condition : Avoir 60 ans ET 150 trimestres
+    const ageAuDepart = confirmedDate && dateNaissanceUser ? getAge(dateNaissanceUser, confirmedDate) : 0;
+    const isEligibleProgressive = ageAuDepart >= 60 && trimestresAcquis >= 150;
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 flex flex-col items-center pt-10 p-6 space-y-8">
@@ -94,14 +117,14 @@ export default function MaRetraite() {
 
             {confirmedDate && (
                 <div className="w-full max-w-2xl bg-green-50 border border-green-200 text-green-800 p-3 rounded-lg text-center">
-                    Date confirmée : <strong>{confirmedDate}</strong>
+                    Date confirmée : <strong>{confirmedDate}</strong> ({ageAuDepart} ans)
                 </div>
             )}
 
             {resultat && (
                 <div className="w-full max-w-3xl space-y-6">
 
-                    {/* BLOC 1 : LE TEXTE EXPLICATIF (ANALYSE) */}
+                    {/* BLOC 1 : ANALYSE */}
                     <div className="bg-white p-6 rounded-xl shadow-md border-l-4 border-purple-600">
                         <h3 className="text-xl font-bold text-gray-800 mb-4">Analyse de votre situation</h3>
 
@@ -116,33 +139,58 @@ export default function MaRetraite() {
 
                             <hr className="my-4" />
 
-                            <p>
-                                <strong>Situation des trimestres :</strong> Vous avez validé <strong>{trimestresAcquis}</strong> trimestres
-                                sur les <strong>{trimestresRequis}</strong> requis pour votre génération.
-                            </p>
-
-                            {manque > 0 ? (
-                                <div className="bg-orange-50 p-4 rounded-lg border border-orange-200 text-orange-800">
-                                    <strong>Attention :</strong> Il vous manque <strong>{manque} trimestre{manque > 1 ? "s" : ""}</strong> pour obtenir le taux plein.
-                                    <br />
-                                    Une <strong>décote</strong> définitive est appliquée.
+                            {/* SCÉNARIOS D'AFFICHAGE (RATH, HANDICAP, STANDARD) */}
+                            {estRATH ? (
+                                <div className="bg-purple-50 p-4 rounded-lg border border-purple-200 text-purple-900">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <span className="text-2xl">♿</span>
+                                        <strong>Retraite Anticipée Handicap (RATH) validée !</strong>
+                                    </div>
+                                    <p className="text-sm">
+                                        Vous pouvez partir dès maintenant au <strong>taux plein (50%)</strong>.
+                                        <br />
+                                        Vous avez validé les <strong>{resultat?.trimestresCotises} trimestres cotisés</strong> requis pour votre âge.
+                                    </p>
+                                </div>
+                            ) : estHandicape ? (
+                                <div className="bg-blue-50 p-4 rounded-lg border border-blue-200 text-blue-900">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <span className="text-2xl">ℹ️</span>
+                                        <strong>Taux plein pour Inaptitude/Handicap</strong>
+                                    </div>
+                                    <p className="text-sm">
+                                        Vous ne remplissez pas les conditions du départ anticipé RATH, 
+                                        mais votre statut vous garantit le <strong>taux plein (50%)</strong> dès l'âge légal, sans décote.
+                                    </p>
+                                    {manque > 0 && (
+                                        <p className="text-xs mt-2 text-blue-700">
+                                            (Note : Votre pension est proratisée car il vous manque {manque} trimestres d'assurance).
+                                        </p>
+                                    )}
                                 </div>
                             ) : (
-                                <div className="bg-green-50 p-4 rounded-lg border border-green-200 text-green-800">
-                                    <strong>Félicitations !</strong> Vous avez atteint le <strong>taux plein</strong> (50%).
+                                <div>
+                                    <p>
+                                        <strong>Situation des trimestres :</strong> Vous avez validé <strong>{trimestresAcquis}</strong> trimestres
+                                        sur les <strong>{trimestresRequis}</strong> requis.
+                                    </p>
 
-                                    {/* On utilise ici la VRAIE variable de surcote */}
-                                    {vraisTrimestresSurcote > 0 ? (
-                                        <span>
+                                    {manque > 0 ? (
+                                        <div className="bg-orange-50 p-4 mt-3 rounded-lg border border-orange-200 text-orange-800">
+                                            <strong>Attention :</strong> Il vous manque <strong>{manque} trimestre{manque > 1 ? "s" : ""}</strong> pour obtenir le taux plein.
                                             <br />
-                                            Bonus : Vous bénéficiez d'une <strong>surcote</strong> grâce à <strong>{vraisTrimestresSurcote} trimestre(s)</strong> cotisé(s) après l'âge légal !
-                                        </span>
+                                            Une <strong>décote</strong> définitive est appliquée.
+                                        </div>
                                     ) : (
-                                        trimestresAcquis > trimestresRequis && (
-                                            <span className="text-sm block mt-1 text-green-700 opacity-80">
-                                                (Vous avez {trimestresAcquis - trimestresRequis} trimestres d'excédent, mais qui ne comptent pas pour la surcote car acquis avant l'âge légal ou via majorations).
-                                            </span>
-                                        )
+                                        <div className="bg-green-50 p-4 mt-3 rounded-lg border border-green-200 text-green-800">
+                                            <strong>Félicitations !</strong> Vous avez atteint le <strong>taux plein</strong> (50%).
+                                            {vraisTrimestresSurcote > 0 && (
+                                                <span>
+                                                    <br />
+                                                    Bonus : Vous bénéficiez d'une <strong>surcote</strong> grâce à <strong>{vraisTrimestresSurcote} trimestre(s)</strong> cotisé(s) après l'âge légal !
+                                                </span>
+                                            )}
+                                        </div>
                                     )}
                                 </div>
                             )}
@@ -150,25 +198,44 @@ export default function MaRetraite() {
                     </div>
 
                     {/* BLOC 2 : SIMULATEUR RETRAITE PROGRESSIVE */}
-                    <div className="bg-white p-6 rounded-xl shadow-md border-l-4 border-blue-500">
+                    <div className={`p-6 rounded-xl shadow-md border-l-4 ${isEligibleProgressive ? "bg-white border-blue-500" : "bg-gray-50 border-gray-300 opacity-75"}`}>
                         <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
                             Option : Retraite Progressive
+                            {!isEligibleProgressive && <span className="text-xs bg-gray-200 text-gray-600 px-2 py-1 rounded">Non éligible</span>}
                         </h3>
+
+                        {/* ✅ MESSAGE D'ÉLIGIBILITÉ */}
+                        {isEligibleProgressive ? (
+                            <div className="mb-4 p-3 bg-blue-50 text-blue-800 text-sm rounded border border-blue-100 flex items-center gap-2">
+                                <Check size={16} />
+                                <strong>Bonne nouvelle :</strong> Vous avez plus de 60 ans et 150 trimestres. Vous êtes éligible à la retraite progressive !
+                            </div>
+                        ) : (
+                            <div className="mb-4 p-3 bg-gray-100 text-gray-600 text-sm rounded border border-gray-200">
+                                <strong>Condition non remplie :</strong> Pour accéder à la retraite progressive, vous devez avoir au moins <strong>60 ans</strong> et <strong>150 trimestres</strong> validés.
+                                <br/>
+                                <span className="text-xs mt-1 block">
+                                    (Votre situation : {ageAuDepart} ans et {trimestresAcquis} trimestres)
+                                </span>
+                            </div>
+                        )}
 
                         <p className="text-gray-600 mb-4">
                             Si vous souhaitez continuer à travailler à temps partiel, vous pouvez percevoir une fraction de votre retraite.
-                            <br /><em>Sélectionnez la part de retraite que vous souhaitez toucher :</em>
                         </p>
 
-                        {/* Boutons de sélection */}
                         <div className="flex justify-center gap-2 mb-6">
                             {[30, 50, 70, 100].map((pct) => (
                                 <button
                                     key={pct}
+                                    disabled={!isEligibleProgressive && pct !== 100} // On laisse 100% cliquable pour revenir à la normale
                                     onClick={() => setPourcentageRetraite(pct)}
-                                    className={`px-4 py-2 rounded-full font-medium transition ${pourcentageRetraite === pct
+                                    className={`px-4 py-2 rounded-full font-medium transition 
+                                        ${pourcentageRetraite === pct
                                             ? "bg-blue-600 text-white shadow-lg scale-105"
-                                            : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                                            : isEligibleProgressive 
+                                                ? "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                                                : "bg-gray-100 text-gray-300 cursor-not-allowed"
                                         }`}
                                 >
                                     {pct === 100 ? "Retraite Totale (100%)" : `${pct}% Pension`}
@@ -176,7 +243,6 @@ export default function MaRetraite() {
                             ))}
                         </div>
 
-                        {/* Résultat dynamique */}
                         <div className="bg-blue-50 p-4 rounded-xl text-center">
                             <span className="text-gray-700">Montant perçu pour une retraite à <strong>{pourcentageRetraite}%</strong> :</span>
                             <div className="text-4xl font-bold text-blue-700 mt-2">
@@ -190,13 +256,14 @@ export default function MaRetraite() {
                         </div>
                     </div>
 
-                    {/* BLOC 3 : DÉTAILS TECHNIQUES (Pliable ou discret) */}
+                    {/* BLOC 3 : DÉTAILS TECHNIQUES */}
                     <div className="bg-gray-50 p-4 rounded-lg border text-sm text-gray-600">
                         <h4 className="font-bold mb-2">Détails techniques :</h4>
                         <ul className="list-disc pl-5 space-y-1">
                             <li>SAM (Salaire Annuel Moyen) : {resultat.sam} €</li>
                             <li>Pension Brute (100%) : {pensionBrute100.toFixed(2)} €</li>
-                            <li>Trimestres Cotisés : {resultat.trimestresAcquis}</li>
+                            <li>Trimestres Validés (Total) : {trimestresAcquis}</li>
+                            {estHandicape && <li>Trimestres Cotisés (RATH) : {trimestresCotises}</li>}
                             <li>Majoration (Enfants/Service) : {resultat.trimestresMajoration}</li>
                             <li>Surcote appliquée : {vraisTrimestresSurcote}</li>
                         </ul>

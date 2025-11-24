@@ -22,8 +22,12 @@ export const PASS_PAR_ANNEE: Record<number, number> = {
 };
 
 export const SMIC_HORAIRE_PAR_ANNEE: Record<number, number> = {
+    // --- Années SMIG / SMIC (Convertis en Euros) ---
+    1960: 0.25, 1961: 0.26, 1962: 0.27, 1963: 0.29, 1964: 0.30,
+    1965: 0.31, 1966: 0.32, 1967: 0.34, 1968: 0.40, 1969: 0.45,
     1970: 0.50, 1971: 0.55, 1972: 0.61, 1973: 0.69, 1974: 0.82,
     1975: 1.00, 1976: 1.15, 1977: 1.30, 1978: 1.45, 1979: 1.63,
+    // --- Données 1980+ ---
     1980: 2.1343, 1981: 2.5855, 1982: 3.0934, 1983: 3.4820, 1984: 4.0539,
     1985: 4.2033, 1986: 4.3414, 1987: 4.5431, 1988: 4.6525, 1989: 4.7689,
     1990: 4.9791, 1991: 5.0615, 1992: 5.1925, 1993: 5.3089, 1994: 5.4219,
@@ -76,14 +80,14 @@ export interface PersonInfo {
     dateNaissance: string;
     sexe: 'Homme' | 'Femme';
     handicape?: boolean;
-    // ✅ Récupération de la date saisie dans ton nouveau formulaire
     handicapeDepuis?: string; 
     militaire?: boolean;
     enfants?: Array<{ 
         dateNaissance: string; 
         adopte?: boolean; 
         adoptionAnnee?: number;
-        trimestresAttribution?: number; 
+        partageAdoption?: number;
+        partageEducation?: number; 
     }>;
     ageDepartSouhaite: string;
 }
@@ -101,6 +105,8 @@ export interface RetraiteResult {
     pensionMensuelleNette: number;
     details: any;
     trimestresSurcote: number;
+    trimestresCotises: number;
+    estEligibleRATH: boolean;
 }
 
 // =============================================================================
@@ -124,11 +130,56 @@ function getAgeLegal(anneeNaissance: number) {
     return AGE_LEGAL_PAR_NAISSANCE[anneeNaissance] ?? 64;
 }
 
+// Retourne un objet { AgeDepart: NbTrimestresCotisesRequis }
+function getRathGrid(dateNaissance: string): Record<number, number> {
+    const d = toDate(dateNaissance);
+    const year = d.getFullYear();
+    const month = d.getMonth() + 1; // 1 = Janvier
+
+    // AVANT 1er Septembre 1961
+    if (year < 1961 || (year === 1961 && month < 9)) {
+        return { 55: 108, 56: 98, 57: 88, 58: 78, 59: 68, 60: 68, 61: 68 };
+    }
+    
+    // Entre 1er Sept 1961 et 31 Déc 1962
+    if ((year === 1961 && month >= 9) || year === 1962) {
+        return { 55: 109, 56: 99, 57: 89, 58: 79, 59: 69, 60: 69 };
+    }
+
+    // Année 1963
+    if (year === 1963) {
+        return { 55: 109, 56: 99, 57: 89, 58: 79, 59: 69 };
+    }
+
+    // Années 1964, 1965
+    if (year === 1964 || year === 1965) {
+        return { 55: 110, 56: 100, 57: 90, 58: 80, 59: 70 };
+    }
+
+    // Année 1966
+    if (year === 1966) {
+        return { 55: 110, 56: 100, 57: 90, 58: 80, 59: 70 };
+    }
+
+    // Années 1967, 1968, 1969
+    if (year >= 1967 && year <= 1969) {
+        return { 55: 110, 56: 100, 57: 90, 58: 80, 59: 70 };
+    }
+
+    // Années 1970, 1971, 1972
+    if (year >= 1970 && year <= 1972) {
+        return { 55: 111, 56: 101, 57: 91, 58: 81, 59: 71 };
+    }
+
+    // À partir de 1973
+    return { 55: 112, 56: 102, 57: 92, 58: 82, 59: 72 };
+}
+
 export function calcTrimestresForYear(salaireAnnuel: number, year: number): number {
     const smicHoraire = SMIC_HORAIRE_PAR_ANNEE[year];
     if (!smicHoraire || smicHoraire <= 0) return 0;
 
-    // Règle historique SMIC
+    // ✅ Règle historique SMIC (200h avant 2014)
     const heuresRequises = year < 2014 ? 200 : 150;
     const seuil = heuresRequises * smicHoraire;
 
@@ -191,7 +242,8 @@ export function detectCarriereLongueEligibility(dateNaissance: string) {
         const salaire = salairesAvant20[year];
         const smic = SMIC_HORAIRE_PAR_ANNEE[year];
         if (!smic) continue;
-        const tr = Math.min(4, Math.floor(salaire / (150 * smic)));
+        
+        const tr = calcTrimestresForYear(salaire, year);
 
         if (year <= birthYear + 16) tAvant16 += tr;
         if (year <= birthYear + 18) tAvant18 += tr;
@@ -237,7 +289,10 @@ export function computeSamAndTrimestresByYear(periods: PeriodInput[]) {
     ]);
     const years = Array.from(yearsSet).sort((a, b) => a - b);
 
-    const perYear: { year: number, salaireRaw: number, salairePlafonne: number, salaireRevalo: number, trimestres: number }[] = [];
+    const perYear: { year: number, salaireRaw: number, salairePlafonne: number, salaireRevalo: number, trimestres: number, trimestresCotises: number }[] = [];
+
+    let trimestresTotal = 0;
+    let trimestresCotisesTotal = 0; 
 
     console.log("--- 📊 DÉTAIL CALCUL TRIMESTRES PAR ANNÉE ---");
 
@@ -245,7 +300,8 @@ export function computeSamAndTrimestresByYear(periods: PeriodInput[]) {
         const salaireTravail = annualSalaries[y] || 0;
         const salaireCL = salairesCL[y] || 0;
         
-        const salaireTotal = salaireTravail + salaireCL;
+        // SÉCURITÉ : Max pour éviter doublons
+        const salaireTotal = Math.max(salaireTravail, salaireCL);
 
         const pass = PASS_PAR_ANNEE[y] ?? Infinity;
         const salairePlaf = Math.min(salaireTotal, pass);
@@ -259,18 +315,33 @@ export function computeSamAndTrimestresByYear(periods: PeriodInput[]) {
         const trimestresViaTravail = calcTrimestresForYear(salaireTravail, y);
 
         const trimestresForce = annualAssimiles[y] || 0;
+        
+        // TRIMESTRES VALIDÉS (Max 4)
         const trimestresFinal = Math.min(4, trimestresArgentTotal + trimestresForce);
+        
+        // ✅ TRIMESTRES COTISÉS (Max 4, uniquement via salaire)
+        const trimestresCotisesAnnee = Math.min(4, trimestresArgentTotal);
+
+        trimestresTotal += trimestresFinal;
+        trimestresCotisesTotal += trimestresCotisesAnnee;
 
         if (trimestresFinal > 0 || salaireTotal > 0) {
             console.log(
-                `📅 Année ${y} : ${trimestresFinal} validés total.` +
+                `📅 Année ${y} : ${trimestresFinal} validés / ${trimestresCotisesAnnee} cotisés.` +
                 `\n   ├─ 👶 Carrière Longue : ${Math.round(salaireCL)}€ (= ${trimestresViaCL} tri)` +
                 `\n   ├─ 💼 Travail Standard : ${Math.round(salaireTravail)}€ (= ${trimestresViaTravail} tri)` +
                 `\n   └─ 🏥 Assimilés (Chom/Mal) : ${trimestresForce} tri`
             );
         }
 
-        perYear.push({ year: y, salaireRaw: salaireTotal, salairePlafonne: salairePlaf, salaireRevalo, trimestres: trimestresFinal });
+        perYear.push({ 
+            year: y, 
+            salaireRaw: salaireTotal, 
+            salairePlafonne: salairePlaf, 
+            salaireRevalo, 
+            trimestres: trimestresFinal,
+            trimestresCotises: trimestresCotisesAnnee
+        });
     }
     
     console.log("--- FIN CALCUL ---");
@@ -280,13 +351,15 @@ export function computeSamAndTrimestresByYear(periods: PeriodInput[]) {
     const sam = top25.length > 0 ? (top25.reduce((s, a) => s + a.salaireRevalo, 0) / 25) : 0;
 
     const trimestresParAnnee: Record<number, number> = {};
-    let trimestresTotal = 0;
-    for (const p of perYear) {
-        trimestresParAnnee[p.year] = p.trimestres;
-        trimestresTotal += p.trimestres;
-    }
+    for (const p of perYear) trimestresParAnnee[p.year] = p.trimestres;
 
-    return { sam: Math.round(sam * 100) / 100, trimestresParAnnee, trimestresAcquis: trimestresTotal, perYear };
+    return { 
+        sam: Math.round(sam * 100) / 100, 
+        trimestresParAnnee, 
+        trimestresAcquis: trimestresTotal,
+        trimestresCotises: trimestresCotisesTotal,
+        perYear 
+    };
 }
 
 // =============================================================================
@@ -294,21 +367,63 @@ export function computeSamAndTrimestresByYear(periods: PeriodInput[]) {
 // =============================================================================
 export function calculateRetraiteFromPeriods(person: PersonInfo, periods: PeriodInput[], dateRetraiteSouhaitee: string): RetraiteResult {
 
-    // 1) Calcul SAM et Trimestres "De base"
-    const { sam, trimestresParAnnee, trimestresAcquis, perYear } = computeSamAndTrimestresByYear(periods);
+    // 1) Calcul SAM et Trimestres
+    const { sam, trimestresParAnnee, trimestresAcquis, trimestresCotises, perYear } = computeSamAndTrimestresByYear(periods);
 
-    // 2) Majoration Enfants
+    // 2) Majoration Enfants (LOGIQUE PRÉCISE AVEC PARTAGE)
     const enfants = person.enfants || [];
     let trimestresMajoration = 0;
-    
     const estFemme = person.sexe === 'Femme';
+    const anneeDepartRetraite = toDate(dateRetraiteSouhaitee).getFullYear();
 
     for (const e of enfants) {
         if (e.dateNaissance && toDate(e.dateNaissance) < toDate(dateRetraiteSouhaitee)) {
-            if (estFemme) {
-                trimestresMajoration += (e.trimestresAttribution !== undefined) ? e.trimestresAttribution : 8;
+            
+            // Valeurs par défaut si non renseignées dans le nouveau formulaire
+            // (Rétro-compatibilité ou défaut logique)
+            const defautAdoption = estFemme ? 4 : 0;
+            const defautEducation = estFemme ? 4 : 0;
+
+            const saisieAdoption = e.partageAdoption !== undefined ? e.partageAdoption : defautAdoption;
+            const saisieEducation = e.partageEducation !== undefined ? e.partageEducation : defautEducation;
+
+            if (e.adopte) {
+                // --- CAS ADOPTION ---
+                
+                // 1. Majoration Adoption (4 max)
+                // On prend ce que l'utilisateur a déclaré avoir obtenu (partage)
+                const majAdoption = Math.min(4, saisieAdoption);
+
+                // 2. Majoration Éducation (4 max, mais limité par le temps réel)
+                // On part de ce que l'utilisateur a déclaré (le partage théorique)
+                // ET on applique le filtre temporel (réalité de la durée)
+                let majEducation = Math.min(4, saisieEducation);
+
+                if (e.adoptionAnnee) {
+                    const anneeNaissance = parseInt(e.dateNaissance.substring(0, 4));
+                    const annee20ans = anneeNaissance + 20;
+                    
+                    // Limite 1 : L'enfant doit avoir moins de 20 ans
+                    const dureeMaxAge = Math.max(0, annee20ans - e.adoptionAnnee);
+                    // Limite 2 : Le temps doit être écoulé avant la retraite
+                    const dureeReelle = Math.max(0, anneeDepartRetraite - e.adoptionAnnee);
+
+                    // Le vrai nombre validé est le minimum entre le partage déclaré et la réalité temporelle
+                    majEducation = Math.min(majEducation, dureeMaxAge, dureeReelle);
+                } 
+                
+                trimestresMajoration += (majAdoption + majEducation);
+
             } else {
-                trimestresMajoration += (e.trimestresAttribution || 0); 
+                // --- CAS BIOLOGIQUE ---
+                // Maternité : 4 (Mère) ou 0 (Père) - Non partageable
+                const majMaternite = estFemme ? 4 : 0;
+                
+                // Éducation : Partageable (saisie utilisateur)
+                // Note : Pour être puriste, on pourrait aussi vérifier l'âge (4 ans après naissance)
+                const majEducation = Math.min(4, saisieEducation);
+
+                trimestresMajoration += (majMaternite + majEducation);
             }
         }
     }
@@ -329,21 +444,37 @@ export function calculateRetraiteFromPeriods(person: PersonInfo, periods: Period
 
     // 6) Décote / Surcote
     const ageDepartFraction = ageInYearsFraction(person.dateNaissance, dateRetraiteSouhaitee);
+    const ageDepartEntier = Math.floor(ageDepartFraction);
     const ecart = trimestresTotal - trimestresRequis;
 
     const trimestresApresAgeLegal = Math.max(0, Math.floor((ageDepartFraction - ageLegal) * 4));
     const surcoteTrimestres = Math.min(Math.max(0, ecart), trimestresApresAgeLegal);
 
     let taux = TAUX_PLEIN;
+    let estEligibleRATH = false;
 
-    // Gestion Carrière Longue (Annulation décote)
+    // Vérification RATH
+    if (person.handicape && ageDepartEntier < ageLegal && ageDepartEntier >= 55) {
+        const grid = getRathGrid(person.dateNaissance);
+        const trimestresRequisRATH = grid[ageDepartEntier];
+
+        if (trimestresRequisRATH && trimestresCotises >= trimestresRequisRATH) {
+            estEligibleRATH = true;
+            taux = TAUX_PLEIN;
+            console.log(`✅ RATH VALIDÉ`);
+        }
+    }
+
     const carriereLongue = detectCarriereLongueEligibility(person.dateNaissance);
 
-    // Calcul Décote (Sauf si carrière longue ou handicapé)
-    if (ecart < 0 && !carriereLongue.eligibleEarly && !person.handicape) {
-        const trimestresManquants = Math.abs(ecart);
-        const decote = trimestresManquants * DECOTE_PAR_TRIMESTRE;
-        taux = Math.max(TAUX_PLEIN - decote, TAUX_PLEIN - (12 * DECOTE_PAR_TRIMESTRE));
+    if (ecart < 0 && !carriereLongue.eligibleEarly && !estEligibleRATH) {
+        if (person.handicape && ageDepartFraction >= ageLegal) {
+             taux = TAUX_PLEIN;
+        } else {
+             const trimestresManquants = Math.abs(ecart);
+             const decote = trimestresManquants * DECOTE_PAR_TRIMESTRE;
+             taux = Math.max(TAUX_PLEIN - decote, TAUX_PLEIN - (12 * DECOTE_PAR_TRIMESTRE));
+        }
     }
 
     let coefSurcote = 1.0;
@@ -355,60 +486,38 @@ export function calculateRetraiteFromPeriods(person: PersonInfo, periods: Period
     const ratio = Math.min(trimestresTotal / trimestresRequis, 1);
 
     // 8) Calcul final Pension
-    const anneeDepart = toDate(dateRetraiteSouhaitee).getFullYear();
-    const passDepart = PASS_PAR_ANNEE[anneeDepart] ?? PASS_PAR_ANNEE[2024] ?? 47100;
-
+    const passDepart = PASS_PAR_ANNEE[anneeDepartRetraite] ?? PASS_PAR_ANNEE[2024] ?? 47100;
     const tauxBase = Math.min(taux, TAUX_PLEIN); 
-    
     const pensionBase = sam * tauxBase * ratio;
-    
     let pensionAnnuelleBrute = pensionBase * coefSurcote;
 
-    // Plafonnement au PASS
     const plafondPension = passDepart * TAUX_PLEIN;
     if (pensionBase > plafondPension) {
          pensionAnnuelleBrute = plafondPension * coefSurcote;
     }
 
-    // Majoration 10% pour 3 enfants
+    // 9) Majoration Handicap
+    if (person.handicape && (estEligibleRATH || ageDepartFraction >= ageLegal)) {
+        let trimestresHandicap = 0;
+        if (person.handicapeDepuis) {
+            const anneeDebutHandicap = parseInt(person.handicapeDepuis);
+            for (const yearData of perYear) {
+                if (yearData.year >= anneeDebutHandicap) trimestresHandicap += yearData.trimestres;
+            }
+        } else {
+            trimestresHandicap = trimestresAcquis;
+        }
+        const ratioMajoration = (1 + (trimestresHandicap / trimestresRequis) / 3);
+        pensionAnnuelleBrute *= ratioMajoration;
+        
+        const pensionMaximumTheorique = sam * TAUX_PLEIN;
+        if (pensionAnnuelleBrute > pensionMaximumTheorique) pensionAnnuelleBrute = pensionMaximumTheorique;
+    }
+
+    // 10) Majoration Enfants
     if ((enfants.length || 0) >= 3) {
         pensionAnnuelleBrute *= 1.10;
     }
-
-    // -------------------------------------------------------------------------
-    // ✅ 9) MAJORATION HANDICAP (Calcul Automatique via date)
-    // -------------------------------------------------------------------------
-    if (person.handicape && trimestresAcquis >= trimestresRequis) { // Condition souvent exigée (durée cotisée minimale)
-        let trimestresHandicap = 0;
-
-        // Si une date est saisie, on l'utilise pour filtrer les trimestres
-        if (person.handicapeDepuis) {
-            const anneeDebutHandicap = parseInt(person.handicapeDepuis);
-            
-            // On additionne les trimestres acquis UNIQUEMENT pour les années >= année du handicap
-            for (const yearData of perYear) {
-                if (yearData.year >= anneeDebutHandicap) {
-                    trimestresHandicap += yearData.trimestres;
-                }
-            }
-            console.log(`♿ Calcul Handicap : Handicap depuis ${anneeDebutHandicap}. Trimestres retenus : ${trimestresHandicap}`);
-        } else {
-            // Fallback : si pas de date, on prend tout (comme avant)
-            trimestresHandicap = trimestresAcquis;
-        }
-
-        // Formule de majoration : Pension * (1 + 1/3 * (Durée Handicap / Durée Requise))
-        const ratioMajoration = (1 + (trimestresHandicap / trimestresRequis) / 3);
-        pensionAnnuelleBrute *= ratioMajoration;
-
-        const pensionMaximumTheorique = sam * TAUX_PLEIN;
-        
-        if (pensionAnnuelleBrute > pensionMaximumTheorique) {
-            pensionAnnuelleBrute = pensionMaximumTheorique;
-            console.log(`⚠️ Pension majorée (${Math.round(pensionAnnuelleBrute)}€) plafonnée au Max Théorique (${Math.round(pensionMaximumTheorique)}€)`);
-        }
-    }
-    // -------------------------------------------------------------------------
 
     const pensionMensuelleBrute = pensionAnnuelleBrute / 12;
     const pensionMensuelleNette = pensionMensuelleBrute * (1 - RETENUES_SOCIALES);
@@ -416,7 +525,8 @@ export function calculateRetraiteFromPeriods(person: PersonInfo, periods: Period
     return {
         sam: Math.round(sam * 100) / 100,
         trimestresParAnnee,
-        trimestresAcquis,
+        trimestresAcquis: trimestresTotal,
+        trimestresCotises, 
         trimestresMajoration: trimestresMajoration + trimestresService,
         trimestresTotal,
         trimestresRequis,
@@ -424,7 +534,7 @@ export function calculateRetraiteFromPeriods(person: PersonInfo, periods: Period
         pensionAnnuelleBrute: Math.round(pensionAnnuelleBrute * 100) / 100,
         pensionMensuelleBrute: Math.round(pensionMensuelleBrute * 100) / 100,
         pensionMensuelleNette: Math.round(pensionMensuelleNette * 100) / 100,
-        details: { perYear },
+        details: { perYear, estEligibleRATH },
         trimestresSurcote: surcoteTrimestres
     } as RetraiteResult;
 }
