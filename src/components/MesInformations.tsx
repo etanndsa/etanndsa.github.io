@@ -78,9 +78,14 @@ export default function MesInformations() {
         window.addEventListener("scroll", handleScroll);
         return () => window.removeEventListener("scroll", handleScroll);
     }, []);
+    const scrollToBottom = () => {
+        window.scrollTo({
+            top: document.documentElement.scrollHeight,
+            behavior: "smooth"
+        });
+    };
 
     const scrollToTop = () => window.scrollTo({ top: 0, behavior: "smooth" });
-    const scrollToBottom = () => window.scrollTo({ top: document.documentElement.scrollHeight, behavior: "smooth" });
 
     // --- CHARGEMENT INITIAL ---
     useEffect(() => {
@@ -410,27 +415,135 @@ export default function MesInformations() {
                          {/* Contenu carrière déjà présent dans ton code */}
                          <h2 className="text-2xl font-bold text-center mb-6 flex items-center justify-center gap-3"><img src={Carriere} className="w-8 h-8" /> Carrière</h2>
                          <div className="bg-gray-50 p-4 rounded-xl shadow space-y-4 border-2 border-blue-100">
-                            {/* Copier coller ton bloc carrière existant ici */}
-                            {/* Je l'ai allégé pour la réponse mais il faut garder ton code précédent pour cette partie */}
-                             <h3 className="text-lg font-bold flex items-center gap-2 text-blue-800">Salaires avant 20 ans</h3>
-                             {/* ... logique salairesAvant20 ... */}
-                             <div className="flex justify-end mt-2 pt-2 border-t border-gray-200">
+                            <h3 className="text-lg font-bold flex items-center gap-2 text-blue-800">⏳ Salaires avant 20 ans</h3>
+                            <div className="space-y-3">
+                                {(() => {
+                                    const birthYear = Number(dateNaissance.substring(0, 4));
+                                    const labels = [16, 17, 18, 19, 20].map(age => ({ age, year: birthYear + age }));
+                                    return labels.map(({ age, year }) => {
+                                        const entry = salairesAvant20[year] || { amount: 0, devise: "EUR" };
+                                        return (
+                                            <div key={year} className="flex items-center gap-3 flex-wrap sm:flex-nowrap">
+                                                <label className="w-full sm:w-56 text-sm text-gray-700 font-medium">Salaire {age} ans ({year}) :</label>
+                                                <input type="number" min={0} step="0.01" value={entry.amount || ""} onChange={(e) => updateSalaireAvant20(year, 'amount', e.target.value)} className="p-2 border rounded-lg w-full sm:w-48" placeholder="0" />
+                                                <select value={entry.devise} onChange={(e) => updateSalaireAvant20(year, 'devise', e.target.value)} className="p-2 border rounded-lg bg-white">
+                                                    <option value="EUR">€</option><option value="FRF">₣</option>
+                                                </select>
+                                            </div>
+                                        );
+                                    });
+                                })()}
+                            </div>
+                            <div className="flex justify-end mt-2 pt-2 border-t border-gray-200">
                                 <button onClick={sauvegarderCarriereLongue} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm font-medium shadow-sm"><Save size={16} /> Enregistrer</button>
                             </div>
-                         </div>
-                         <div className="bg-gray-50 p-6 mt-5 rounded-2xl shadow-inner space-y-6">
-                            {/* ... liste periodes ... */}
-                            {/* Je ne remets pas tout le bloc carrière pour pas saturer la réponse, il n'a pas changé */}
-                             <div className="space-y-4">
-                                 {periodes.map(p => (
-                                     <div key={p.id} className="bg-white p-2 mb-2 rounded shadow">Période {p.debut} - {p.fin} ({p.type}) <button onClick={()=>supprimerPeriode(p.id)} className="text-red-500 ml-2">X</button></div>
-                                 ))}
-                                 <button onClick={ajouterPeriode} className="px-4 py-2 bg-purple-600 text-white rounded-xl">Ajouter Période (Voir code précédent pour détails)</button>
-                             </div>
-                         </div>
+                        </div>
+
+                        {/* LISTE DES PÉRIODES (MODIFIÉ POUR MALADIE/CHOMAGE) */}
+                        <div className="bg-gray-50 p-6 mt-5 rounded-2xl shadow-inner space-y-6">
+                            <div className="space-y-4">
+                                {periodes.map(p => {
+                                    const isDisabled = p.valide;
+                                    const type = p.type || 'TRAVAIL';
+                                    const isAssimile = type !== 'TRAVAIL';
+
+                                    return (
+                                        <div key={p.id} className={`bg-white p-4 rounded-xl shadow space-y-3 ${isDisabled ? "bg-gray-100 opacity-70" : ""} border-l-4 ${isAssimile ? "border-orange-400" : "border-purple-600"}`}>
+                                            <div className="grid grid-cols-1 md:grid-cols-6 gap-3 items-end">
+                                                
+                                                {/* Type */}
+                                                <label className="flex flex-col text-sm md:col-span-1">
+                                                    <span className="text-xs text-gray-500 font-semibold mb-1">Type</span>
+                                                    <select 
+                                                        value={type} 
+                                                        onChange={e => updatePeriode(p.id, { type: e.target.value as any })} 
+                                                        disabled={isDisabled}
+                                                        className="p-2 border rounded-lg bg-gray-50 text-sm font-medium"
+                                                    >
+                                                        <option value="TRAVAIL">💼 Travail</option>
+                                                        <option value="MALADIE">🏥 Maladie</option>
+                                                        <option value="CHOMAGE">📉 Chômage</option>
+                                                    </select>
+                                                </label>
+
+                                                {/* Dates (2 colonnes) */}
+                                                <label className="flex flex-col text-sm md:col-span-1">
+                                                    <span className="text-xs text-gray-500">Début</span>
+                                                    <input type="date" value={p.debut} onChange={e => updatePeriode(p.id, { debut: e.target.value })} className="p-2 border rounded-lg" disabled={isDisabled} />
+                                                </label>
+                                                <label className="flex flex-col text-sm md:col-span-1">
+                                                    <span className="text-xs text-gray-500">Fin</span>
+                                                    <input type="date" value={p.fin} onChange={e => updatePeriode(p.id, { fin: e.target.value })} className="p-2 border rounded-lg" disabled={isDisabled} />
+                                                </label>
+
+                                                {/* CONDITIONNEL : Salaire OU Trimestres (2 colonnes) */}
+                                                {isAssimile ? (
+                                                    // Cas Assimilé : On demande les trimestres
+                                                    <label className="flex flex-col text-sm md:col-span-2">
+                                                        <span className="text-xs text-gray-500 text-orange-600 font-bold">Trimestres à valider (max 4)</span>
+                                                        <input 
+                                                            type="number" 
+                                                            min={0} max={4}
+                                                            value={p.trimestresAssimiles || ""} 
+                                                            onChange={e => updatePeriode(p.id, { trimestresAssimiles: parseInt(e.target.value) || 0 })} 
+                                                            className="p-2 border rounded-lg text-center border-orange-300 focus:ring-orange-500" 
+                                                            disabled={isDisabled}
+                                                            placeholder="Ex: 1 pour 60j"
+                                                        />
+                                                    </label>
+                                                ) : (
+                                                    // Cas Travail : On demande Salaire + Devise
+                                                    <>
+                                                        <label className="flex flex-col text-sm md:col-span-1">
+                                                            <span className="text-xs text-gray-500">Salaire</span>
+                                                            <input type="number" value={p.salaire || ""} onChange={e => updatePeriode(p.id, { salaire: parseFloat(e.target.value) || 0 })} className="p-2 border rounded-lg" disabled={isDisabled} />
+                                                        </label>
+                                                        <label className="flex flex-col text-sm md:col-span-1">
+                                                            <span className="text-xs text-gray-500">Devise</span>
+                                                            <select value={p.devise || "EUR"} onChange={e => updatePeriode(p.id, { devise: e.target.value as any })} disabled={isDisabled} className="p-2 border rounded-lg w-full"><option value="EUR">€</option><option value="FRF">₣</option></select>
+                                                        </label>
+                                                    </>
+                                                )}
+
+                                                {/* Actions (1 colonne) */}
+                                                <div className="flex justify-end gap-2 md:col-span-1 pb-1">
+                                                    <button onClick={() => updatePeriode(p.id, { valide: false })} className="p-2 rounded hover:bg-gray-100 text-gray-500"><Pencil size={18}/></button>
+                                                    <button onClick={() => validerPeriode(p.id)} className="p-2 rounded hover:bg-green-100 text-green-600"><Check size={18}/></button>
+                                                    <button onClick={() => supprimerPeriode(p.id)} className="p-2 rounded hover:bg-red-100 text-red-600"><Trash2 size={18}/></button>
+                                                </div>
+                                            </div>
+                                            {erreursPeriodes[p.id] && <p className="text-red-600 text-sm flex items-center gap-1"><AlertCircle size={14}/> {erreursPeriodes[p.id]}</p>}
+                                        </div>
+                                    );
+                                })}
+                                <button onClick={() => ajouterPeriode()} className="px-4 py-2 bg-purple-600 text-white rounded-xl hover:bg-purple-700 flex items-center gap-2 w-fit"><Plus size={16} /> Ajouter une période</button>
+                            </div>
+                        </div>
                     </section>
                 )}
 
+            </div>
+            {/* Boutons de navigation */}
+            <div className="fixed bottom-8 right-8 flex gap-4 z-50">
+                {/* Bouton Scroll Down (avec animation) */}
+                <button 
+                    onClick={scrollToBottom} 
+                    className="bg-purple-600 text-white p-3 rounded-full shadow-lg hover:bg-purple-700 transition-all duration-300 animate-bounce"
+                    title="Aller en bas"
+                >
+                    <ArrowDown size={24} />
+                </button>
+
+                {/* Bouton Scroll Up (avec animation) */}
+                {showScrollTop && (
+                    <button 
+                        onClick={scrollToTop} 
+                        className="bg-purple-600 text-white p-3 rounded-full shadow-lg hover:bg-purple-700 transition-all duration-300 animate-bounce"
+                        title="Retour en haut"
+                    >
+                        <ArrowUp size={24} />
+                    </button>
+                )}
             </div>
         </div>
     );
