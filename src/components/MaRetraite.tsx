@@ -77,6 +77,7 @@ export default function MaRetraite() {
                 handicapeDepuis: mesInfos.handicapeDepuis,
                 sexe: mesInfos.sexe,
                 militaire: mesInfos.militaire ?? false,
+                serviceMilitaireJours: mesInfos.serviceMilitaireJours ?? 0,
                 enfants: mesInfos.enfants ?? [],
                 ageDepartSouhaite: date
             };

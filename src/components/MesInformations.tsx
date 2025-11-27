@@ -47,6 +47,7 @@ export default function MesInformations() {
     const [handicape, setHandicape] = useState(false);
     const [handicapeDepuis, setHandicapeDepuis] = useState(""); 
     const [militaire, setMilitaire] = useState(false);
+    const [serviceMilitaireJours, setServiceMilitaireJours] = useState("");
 
     // --- ENFANTS ---
     const [enfants, setEnfants] = useState<Enfant[]>([]);
@@ -62,8 +63,6 @@ export default function MesInformations() {
     const [editingChildIndex, setEditingChildIndex] = useState<number | null>(null);
     const [isShared, setIsShared] = useState(false);
     
-    // ✅ UX : État pour afficher/masquer les options avancées (Répartition)
-    const [showAdvancedOptions, setShowAdvancedOptions] = useState(false);
 
     // --- CARRIÈRE ---
     const [periodes, setPeriodes] = useState<Periode[]>([]);
@@ -128,6 +127,8 @@ export default function MesInformations() {
                     if (parsed.handicape !== undefined) setHandicape(parsed.handicape);
                     if (parsed.handicapeDepuis) setHandicapeDepuis(parsed.handicapeDepuis);
                     if (parsed.militaire !== undefined) setMilitaire(parsed.militaire);
+                    // ✅ CHARGEMENT DES JOURS MILITAIRES
+                    if (parsed.serviceMilitaireJours) setServiceMilitaireJours(parsed.serviceMilitaireJours);
                     if (parsed.enfants) {
                         const normalized = (parsed.enfants || []).map((en: any) => {
                             let year: number | undefined = undefined;
@@ -184,7 +185,7 @@ export default function MesInformations() {
     }, [sexe, isShared]);
 
     const validerDonnees = () => {
-        const data = { nom, prenom, sexe, dateNaissance, handicape, handicapeDepuis, militaire, enfants };
+        const data = { nom, prenom, sexe, dateNaissance, handicape, handicapeDepuis, militaire, serviceMilitaireJours, enfants };
         localStorage.setItem("mesInfos", JSON.stringify(data));
         window.dispatchEvent(new Event('profiles-changed'));
     };
@@ -305,10 +306,29 @@ export default function MesInformations() {
                                 )}
                             </div>
 
+                            {/* ✅ INPUT JOURS SERVICE MILITAIRE */}
                             {sexe === "Homme" && (
-                                <div className="md:col-span-2 flex items-center space-x-3">
-                                    <input id="militaire" type="checkbox" checked={militaire} onChange={e => setMilitaire(e.target.checked)} className="w-5 h-5 accent-purple-600" />
-                                    <label htmlFor="militaire">J'ai effectué le service militaire</label>
+                                <div className="md:col-span-2 flex flex-col space-y-2">
+                                    <div className="flex items-center space-x-3">
+                                        <input id="militaire" type="checkbox" checked={militaire} onChange={e => setMilitaire(e.target.checked)} className="w-5 h-5 accent-purple-600" />
+                                        <label htmlFor="militaire">J'ai effectué le service militaire</label>
+                                    </div>
+                                    {militaire && (
+                                        <div className="flex items-center space-x-3 ml-8 animate-fade-in-down">
+                                            <label htmlFor="militaireJours" className="text-sm text-gray-600">Nombre de jours :</label>
+                                            <input 
+                                                id="militaireJours" 
+                                                type="number" 
+                                                placeholder="Ex: 360" 
+                                                value={serviceMilitaireJours} 
+                                                onChange={e => setServiceMilitaireJours(e.target.value)} 
+                                                className="p-2 border rounded-lg w-32 text-center" 
+                                            />
+                                            <span className="text-xs text-blue-600 font-medium">
+                                                (≈ {Math.ceil((parseInt(serviceMilitaireJours) || 0) / 90)} trimestres)
+                                            </span>
+                                        </div>
+                                    )}
                                 </div>
                             )}
                         </div>

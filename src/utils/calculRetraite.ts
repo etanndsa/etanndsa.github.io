@@ -82,6 +82,7 @@ export interface PersonInfo {
     handicape?: boolean;
     handicapeDepuis?: string; 
     militaire?: boolean;
+    serviceMilitaireJours?: number;
     enfants?: Array<{ 
         dateNaissance: string; 
         adopte?: boolean; 
@@ -306,7 +307,6 @@ export function computeSamAndTrimestresByYear(periods: PeriodInput[]) {
     let trimestresTotal = 0;
     let trimestresCotisesTotal = 0; 
 
-    console.log("--- 📊 DÉTAIL CALCUL TRIMESTRES PAR ANNÉE ---");
 
     for (const y of years) {
         const salaireTravail = annualSalaries[y] || 0;
@@ -337,14 +337,6 @@ export function computeSamAndTrimestresByYear(periods: PeriodInput[]) {
         trimestresTotal += trimestresFinal;
         trimestresCotisesTotal += trimestresCotisesAnnee;
 
-        if (trimestresFinal > 0 || salaireTotal > 0) {
-            console.log(
-                `📅 Année ${y} : ${trimestresFinal} validés / ${trimestresCotisesAnnee} cotisés.` +
-                `\n   ├─ 👶 Carrière Longue : ${Math.round(salaireCL)}€ (= ${trimestresViaCL} tri)` +
-                `\n   ├─ 💼 Travail Standard : ${Math.round(salaireTravail)}€ (= ${trimestresViaTravail} tri)` +
-                `\n   └─ 🏥 Assimilés (Chom/Mal) : ${trimestresForce} tri`
-            );
-        }
 
         perYear.push({ 
             year: y, 
@@ -356,8 +348,6 @@ export function computeSamAndTrimestresByYear(periods: PeriodInput[]) {
         });
     }
     
-    console.log("--- FIN CALCUL ---");
-
     const validYearsForSam = perYear.filter(p => p.salaireRaw > 0);
     const top25 = validYearsForSam.sort((a, b) => b.salaireRevalo - a.salaireRevalo).slice(0, 25);
     const sam = top25.length > 0 ? (top25.reduce((s, a) => s + a.salaireRevalo, 0) / 25) : 0;
@@ -411,7 +401,9 @@ export function calculateRetraiteFromPeriods(person: PersonInfo, periods: Period
     // 3) Majoration Service Militaire
     let trimestresService = 0;
     if (person.militaire) {
-        trimestresService = 4;
+        // ✅ CALCUL DYNAMIQUE : 1 trimestre pour 90 jours
+        const jours = person.serviceMilitaireJours || 0;
+        trimestresService = Math.ceil(jours / 90); 
     }
 
     // 4) Total Général
@@ -441,7 +433,6 @@ export function calculateRetraiteFromPeriods(person: PersonInfo, periods: Period
         if (trimestresRequisRATH && trimestresCotises >= trimestresRequisRATH) {
             estEligibleRATH = true;
             taux = TAUX_PLEIN;
-            console.log(`✅ RATH VALIDÉ`);
         }
     }
 
