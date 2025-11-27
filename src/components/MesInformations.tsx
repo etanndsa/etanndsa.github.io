@@ -60,6 +60,7 @@ export default function MesInformations() {
     });
     const [adoptionAnneeText, setAdoptionAnneeText] = useState<string>("");
     const [editingChildIndex, setEditingChildIndex] = useState<number | null>(null);
+    const [isShared, setIsShared] = useState(false);
     
     // ✅ UX : État pour afficher/masquer les options avancées (Répartition)
     const [showAdvancedOptions, setShowAdvancedOptions] = useState(false);
@@ -87,6 +88,32 @@ export default function MesInformations() {
 
     const scrollToTop = () => window.scrollTo({ top: 0, behavior: "smooth" });
 
+    const appliquerValeursParDefaut = () => {
+        const defautAdoption = sexe === "Femme" ? 4 : 0;
+        const defautEducation = 4;
+        
+        setNouvelEnfant(prev => ({ 
+            ...prev, 
+            partageAdoption: defautAdoption, 
+            partageEducation: defautEducation 
+        }));
+    };
+
+    // Reset auto des trimestres par défaut lors du changement de sexe
+    useEffect(() => {
+        if (editingChildIndex === null && !isShared) {
+            appliquerValeursParDefaut();
+        }
+    }, [sexe, editingChildIndex, isShared]);
+
+    // 🔘 Handler pour la Checkbox "Partagé"
+    const handleSharedChange = (checked: boolean) => {
+        setIsShared(checked);
+        if (!checked) {
+            appliquerValeursParDefaut();
+        }
+    };
+
     // --- CHARGEMENT INITIAL ---
     useEffect(() => {
         const loadFromLocalStorage = () => {
@@ -106,7 +133,14 @@ export default function MesInformations() {
                             let year: number | undefined = undefined;
                             if (Array.isArray(en?.adoptionAnnee) && en.adoptionAnnee.length > 0) year = parseInt(en.adoptionAnnee[0]);
                             else if (en?.adoptionAnnee != null) year = parseInt(en.adoptionAnnee);
-                            return { ...en, adoptionAnnee: year };
+                            
+                            // On assure la rétrocompatibilité des trimestres
+                            return { 
+                                ...en, 
+                                adoptionAnnee: year,
+                                partageAdoption: en.partageAdoption !== undefined ? en.partageAdoption : (parsed.sexe === 'Femme' ? 4 : 0),
+                                partageEducation: en.partageEducation !== undefined ? en.partageEducation : 4
+                            };
                         });
                         setEnfants(normalized);
                     }
@@ -126,13 +160,28 @@ export default function MesInformations() {
         return () => window.removeEventListener('profiles-changed', onProfilesChanged as EventListener);
     }, []);
 
-    // Reset auto des trimestres par défaut
+    // 🔄 LOGIQUE DE CALCUL AUTOMATIQUE
+    // Cette fonction est appelée automatiquement quand le sexe ou la case "partagé" change
     useEffect(() => {
-        if (editingChildIndex === null) {
-            const defaut = sexe === "Femme" ? 4 : 0;
-            setNouvelEnfant(prev => ({ ...prev, partageAdoption: defaut, partageEducation: defaut }));
+        let mat = 0;
+        let educ = 0;
+
+        if (sexe === "Femme") {
+            mat = 4; // Toujours 4 pour la femme (biologique ou adoption principale)
+            educ = isShared ? 2 : 4; // Si partagé +6 total, sinon +8 total
+        } else {
+            // Homme
+            mat = 0; // Toujours 0
+            educ = isShared ? 2 : 4; // Si partagé +2 total, sinon +4 total
         }
-    }, [sexe, editingChildIndex]);
+
+        setNouvelEnfant(prev => ({
+            ...prev,
+            partageAdoption: mat,
+            partageEducation: educ
+        }));
+
+    }, [sexe, isShared]);
 
     const validerDonnees = () => {
         const data = { nom, prenom, sexe, dateNaissance, handicape, handicapeDepuis, militaire, enfants };
@@ -149,18 +198,17 @@ export default function MesInformations() {
     // --- LOGIQUE ENFANTS ---
 
     const resetFormulaireEnfant = () => {
-        const defaut = sexe === "Femme" ? 4 : 0;
+        setIsShared(false); // Reset de la case à cocher
         setNouvelEnfant({ 
             prenom: "", 
             nom: "", 
             dateNaissance: "", 
             adopte: false, 
-            partageAdoption: defaut,
-            partageEducation: defaut
+            partageAdoption: sexe === "Femme" ? 4 : 0,
+            partageEducation: 4
         });
         setAdoptionAnneeText("");
         setEditingChildIndex(null);
-        setShowAdvancedOptions(false); // ✅ On referme le panneau avancé
     };
 
     const ajouterOuModifierEnfant = () => {
@@ -187,8 +235,14 @@ export default function MesInformations() {
         setNouvelEnfant(enfant);
         setAdoptionAnneeText(enfant.adoptionAnnee ? String(enfant.adoptionAnnee) : '');
         setEditingChildIndex(index);
-        // ✅ En mode édition, on ouvre le panneau pour voir les détails
-        setShowAdvancedOptions(true); 
+        
+        // Détecter si c'était partagé pour cocher la case
+        // Si l'éducation est à 2, c'est que c'était partagé
+        if (enfant.partageEducation === 2) {
+            setIsShared(true);
+        } else {
+            setIsShared(false);
+        }
         
         const formElement = document.getElementById('form-enfant');
         if(formElement) formElement.scrollIntoView({ behavior: 'smooth' });
@@ -279,12 +333,8 @@ export default function MesInformations() {
                                                 <span className="font-bold">{e.prenom} {e.nom}</span> ({e.dateNaissance}) 
                                                 {e.adopte && ` - Adopté en ${e.adoptionAnnee}`}
                                                 <span className="text-xs text-gray-500 block mt-1">
-                                                    {e.adopte 
-                                                        ? `${(e.partageAdoption||0)} (Adoption) + ${(e.partageEducation||0)} (Éduc) = ${ (e.partageAdoption||0) + (e.partageEducation||0)} trimestres`
-                                                        : sexe === "Femme" 
-                                                            ? "8 trimestres validés (Maternité + Éducation)"
-                                                            : `${e.partageEducation || 0} trimestres (Partage Éducation)`
-                                                    }
+                                                    {/* Affichage du total calculé */}
+                                                    Total : <strong>{(e.partageAdoption||0) + (e.partageEducation||0)} trimestres</strong> validés
                                                 </span>
                                             </div>
                                             <div className="flex space-x-2">
@@ -312,8 +362,6 @@ export default function MesInformations() {
                                             <input type="checkbox" checked={nouvelEnfant.adopte} onChange={e => {
                                                 const isAdopte = e.target.checked;
                                                 setNouvelEnfant({ ...nouvelEnfant, adopte: isAdopte });
-                                                // ✅ UX : Si on coche Adopté, on ouvre automatiquement les options avancées
-                                                if(isAdopte) setShowAdvancedOptions(true);
                                             }} className="w-5 h-5 accent-purple-600" />
                                             <span>Adopté</span>
                                         </div>
@@ -325,69 +373,30 @@ export default function MesInformations() {
                                     </div>
                                 </div>
 
-                                {/* BOUTON TOGGLE OPTIONS AVANCÉES */}
-                                <div className="flex justify-end mt-2">
-                                    <button 
-                                        onClick={() => setShowAdvancedOptions(!showAdvancedOptions)}
-                                        className="text-xs flex items-center gap-1 text-purple-600 hover:text-purple-800 underline"
-                                    >
-                                        {showAdvancedOptions ? <X size={12}/> : <Settings size={12}/>}
-                                        {showAdvancedOptions ? "Masquer la répartition des trimestres" : "Gérer la répartition des trimestres (Avancé)"}
-                                    </button>
-                                </div>
-
-                                {/* LOGIQUE DE PARTAGE DES TRIMESTRES (CONDITIONNELLE) */}
-                                {showAdvancedOptions && (
-                                    <div className="md:col-span-4 mt-2 p-3 bg-blue-50 rounded-lg border border-blue-100 animate-fade-in-down">
-                                        <div className="flex flex-col gap-3">
-                                            <div className="flex items-center gap-2 text-sm text-blue-800 font-semibold">
-                                                <HelpCircle size={16} />
-                                                <span>Répartition des trimestres (Partage parents)</span>
-                                            </div>
-                                            
-                                            <p className="text-xs text-gray-600 mb-2">
-                                                Pour un enfant adopté (ou né après 2010), les parents peuvent se répartir les trimestres.
-                                                <br/>Par défaut, la mère a souvent la priorité.
-                                            </p>
-
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                {/* Champ 1 */}
-                                                <div className="flex flex-col">
-                                                    <label className="text-xs font-medium text-gray-700 mb-1">
-                                                        {nouvelEnfant.adopte ? "Majoration Adoption (Max 4)" : "Majoration Maternité (Max 4)"}
-                                                    </label>
-                                                    {nouvelEnfant.adopte ? (
-                                                        <select 
-                                                            value={nouvelEnfant.partageAdoption ?? (sexe === "Femme" ? 4 : 0)} 
-                                                            onChange={e => setNouvelEnfant({...nouvelEnfant, partageAdoption: parseInt(e.target.value)})}
-                                                            className="p-2 border rounded-lg text-sm bg-white"
-                                                        >
-                                                            {[0,1,2,3,4].map(n => <option key={n} value={n}>{n} trimestre(s)</option>)}
-                                                        </select>
-                                                    ) : (
-                                                        <div className="text-sm font-bold text-gray-500 p-2 bg-gray-100 rounded border">
-                                                            {sexe === "Femme" ? "4 (Automatique Mère)" : "0 (Impossible Père)"}
-                                                        </div>
-                                                    )}
-                                                </div>
-
-                                                {/* Champ 2 */}
-                                                <div className="flex flex-col">
-                                                    <label className="text-xs font-medium text-gray-700 mb-1">
-                                                        Majoration Éducation (Max 4)
-                                                    </label>
-                                                    <select 
-                                                        value={nouvelEnfant.partageEducation ?? (sexe === "Femme" ? 4 : 0)} 
-                                                        onChange={e => setNouvelEnfant({...nouvelEnfant, partageEducation: parseInt(e.target.value)})}
-                                                        className="p-2 border rounded-lg text-sm bg-white"
-                                                    >
-                                                        {[0,1,2,3,4].map(n => <option key={n} value={n}>{n} trimestre(s)</option>)}
-                                                    </select>
-                                                </div>
-                                            </div>
+                                {/* ✅ CASE PARTAGE SIMPLIFIÉE */}
+                                <div className="md:col-span-4 mt-4">
+                                    <div className="flex items-center space-x-3 bg-blue-50 p-3 rounded-lg border border-blue-100">
+                                        <input 
+                                            type="checkbox" 
+                                            id="share-trim"
+                                            checked={isShared}
+                                            onChange={(e) => setIsShared(e.target.checked)}
+                                            className="w-5 h-5 accent-blue-600 cursor-pointer"
+                                        />
+                                        <div className="flex flex-col">
+                                            <label htmlFor="share-trim" className="text-sm font-semibold text-gray-800 cursor-pointer">
+                                                Avez-vous partagé des trimestres d'éducation ?
+                                            </label>
+                                            <span className="text-xs text-blue-600 font-medium mt-1">
+                                                {/* FEEDBACK DYNAMIQUE */}
+                                                {sexe === "Femme" 
+                                                    ? isShared ? "Total : +6 trimestres (4 Maternité + 2 Éducation)" : "Total : +8 trimestres (4 Maternité + 4 Éducation)"
+                                                    : isShared ? "Total : +2 trimestres (2 Éducation)" : "Total : +4 trimestres (4 Éducation)"
+                                                }
+                                            </span>
                                         </div>
                                     </div>
-                                )}
+                                </div>
 
                                 {/* BOUTONS D'ACTION FORMULAIRE */}
                                 <div className="flex gap-3 pt-2">

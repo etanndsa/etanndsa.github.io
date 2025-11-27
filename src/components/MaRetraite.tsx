@@ -1,9 +1,9 @@
-import { Check } from "lucide-react";
-import { calculateRetraiteFromPeriods } from "../utils/calculRetraite";
+import { Check, AlertTriangle } from "lucide-react"; // Ajout icone alerte
+import { calculateRetraiteFromPeriods, getAgeLegal, detectCarriereLongueEligibility } from "../utils/calculRetraite";
 import FormulaireRetraite from "./FormulaireRetraites";
 import { useState, useEffect } from "react";
 
-// Petit utilitaire pour calculer l'âge précis à une date donnée
+// Petit utilitaire pour calculer l'âge précis (années pleines)
 function getAge(dateNaissance: string, dateCible: string) {
     const birth = new Date(dateNaissance);
     const target = new Date(dateCible);
@@ -13,6 +13,13 @@ function getAge(dateNaissance: string, dateCible: string) {
         age--;
     }
     return age;
+}
+
+// Petit utilitaire pour l'âge précis (fractionnaire pour comparaison stricte)
+function getAgeExact(dateNaissance: string, dateCible: string) {
+    const birth = new Date(dateNaissance).getTime();
+    const target = new Date(dateCible).getTime();
+    return (target - birth) / (1000 * 60 * 60 * 24 * 365.25);
 }
 
 export default function MaRetraite() {
@@ -35,10 +42,11 @@ export default function MaRetraite() {
 
     const [resultat, setResultat] = useState<any | null>(null);
     const [pourcentageRetraite, setPourcentageRetraite] = useState(100);
-
     const [estHandicape, setEstHandicape] = useState(false);
-    // On stocke la date de naissance pour le calcul d'âge en temps réel
     const [dateNaissanceUser, setDateNaissanceUser] = useState<string>("");
+
+    // 🚨 État pour gérer l'erreur d'âge légal
+    const [erreurAgeLegal, setErreurAgeLegal] = useState<string | null>(null);
 
     async function handleConfirm(date: string) {
         if (!date) {
@@ -48,6 +56,7 @@ export default function MaRetraite() {
 
         setConfirmedDate(date);
         localStorage.setItem("confirmedRetirementDate", date);
+        setErreurAgeLegal(null); // Reset erreur précédente
 
         try {
             const mesInfos = JSON.parse(localStorage.getItem("mesInfos") || "{}");
@@ -61,6 +70,7 @@ export default function MaRetraite() {
             setEstHandicape(mesInfos.handicape === true);
             setDateNaissanceUser(mesInfos.dateNaissance);
 
+            // 1. On lance le calcul normalement
             const person = {
                 dateNaissance: mesInfos.dateNaissance,
                 handicape: mesInfos.handicape ?? false,
@@ -73,10 +83,33 @@ export default function MaRetraite() {
 
             const res = calculateRetraiteFromPeriods(person, periodes, date);
 
+            // ---------------------------------------------------------
+            // 🛑 2. VÉRIFICATION DE L'ÂGE LÉGAL (Blocage)
+            // ---------------------------------------------------------
+            const anneeNaissance = parseInt(mesInfos.dateNaissance.substring(0, 4));
+            const ageLegal = getAgeLegal(anneeNaissance); // Ex: 64
+            const ageAuDepartExact = getAgeExact(mesInfos.dateNaissance, date);
+
+            // Vérif 1 : Si RATH est validé par le moteur de calcul, c'est OK
+            const isRathOK = res.details?.estEligibleRATH;
+
+            // Vérif 2 : Carrière Longue (On recalcule vite fait l'éligibilité pour vérifier)
+            // Note: Idéalement, calculateRetraiteFromPeriods devrait renvoyer l'info carrière longue
+            const carriereLongueCheck = detectCarriereLongueEligibility(mesInfos.dateNaissance); 
+            // On vérifie grossièrement si l'âge visé correspond à un départ anticipé possible
+            const isCarriereLongueOK = carriereLongueCheck.eligibleEarly && ageAuDepartExact >= (carriereLongueCheck.ageDepartAnticipe || 60);
+
+            // LOGIQUE DE BLOCAGE
+            if (ageAuDepartExact < ageLegal && !isRathOK && !isCarriereLongueOK) {
+                setErreurAgeLegal(`Impossible de partir avant l'âge légal de ${ageLegal} ans pour votre génération (${anneeNaissance}). Vous demandez un départ à ${ageAuDepartExact.toFixed(1)} ans.`);
+                setResultat(null); // On n'affiche pas de résultat faux
+                return;
+            }
+            // ---------------------------------------------------------
+
             setResultat(res);
             setPourcentageRetraite(100);
 
-            alert("Calcul effectué !");
         } catch (e) {
             console.error("Erreur lors du calcul de retraite :", e);
             alert("Erreur lors du calcul. Voir la console.");
@@ -87,22 +120,14 @@ export default function MaRetraite() {
 
     const pensionNette100 = resultat?.pensionMensuelleNette ?? 0;
     const pensionBrute100 = resultat?.pensionMensuelleBrute ?? 0;
-    
     const trimestresAcquis = resultat?.trimestresAcquis ?? 0;
     const trimestresCotises = resultat?.trimestresCotises ?? 0;
     const trimestresRequis = resultat?.trimestresRequis ?? 0;
-    
-    const taux = resultat?.tauxEffectif ?? 0;
     const vraisTrimestresSurcote = resultat?.trimestresSurcote ?? 0;
-    
     const estRATH = resultat?.details?.estEligibleRATH ?? false;
-    
     const manque = Math.max(0, trimestresRequis - trimestresAcquis);
-
     const pensionProgressiveNette = (pensionNette100 * pourcentageRetraite) / 100;
 
-    // ✅ CALCUL ÉLIGIBILITÉ RETRAITE PROGRESSIVE
-    // Condition : Avoir 60 ans ET 150 trimestres
     const ageAuDepart = confirmedDate && dateNaissanceUser ? getAge(dateNaissanceUser, confirmedDate) : 0;
     const isEligibleProgressive = ageAuDepart >= 60 && trimestresAcquis >= 150;
 
@@ -121,7 +146,21 @@ export default function MaRetraite() {
                 </div>
             )}
 
-            {resultat && (
+            {/* 🛑 AFFICHAGE DE L'ERREUR D'ÂGE */}
+            {erreurAgeLegal && (
+                <div className="w-full max-w-2xl bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded shadow-md flex items-start gap-3 animate-pulse">
+                    <AlertTriangle size={24} />
+                    <div>
+                        <h3 className="font-bold">Départ impossible</h3>
+                        <p>{erreurAgeLegal}</p>
+                        <p className="text-sm mt-2 text-red-600">
+                            Sauf dispositif particulier (Carrière longue, Handicap), vous devez attendre l'âge légal.
+                        </p>
+                    </div>
+                </div>
+            )}
+
+            {resultat && !erreurAgeLegal && (
                 <div className="w-full max-w-3xl space-y-6">
 
                     {/* BLOC 1 : ANALYSE */}
@@ -149,7 +188,7 @@ export default function MaRetraite() {
                                     <p className="text-sm">
                                         Vous pouvez partir dès maintenant au <strong>taux plein (50%)</strong>.
                                         <br />
-                                        Vous avez validé les <strong>{resultat?.trimestresCotises} trimestres cotisés</strong> requis pour votre âge.
+                                        Vous avez validé les <strong>{trimestresCotises} trimestres cotisés</strong> requis pour votre âge.
                                     </p>
                                 </div>
                             ) : estHandicape ? (
@@ -228,15 +267,15 @@ export default function MaRetraite() {
                             {[30, 50, 70, 100].map((pct) => (
                                 <button
                                     key={pct}
-                                    disabled={!isEligibleProgressive && pct !== 100} // On laisse 100% cliquable pour revenir à la normale
+                                    disabled={!isEligibleProgressive && pct !== 100}
                                     onClick={() => setPourcentageRetraite(pct)}
                                     className={`px-4 py-2 rounded-full font-medium transition 
-                                        ${pourcentageRetraite === pct
-                                            ? "bg-blue-600 text-white shadow-lg scale-105"
-                                            : isEligibleProgressive 
-                                                ? "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                                                : "bg-gray-100 text-gray-300 cursor-not-allowed"
-                                        }`}
+                                    ${pourcentageRetraite === pct
+                                        ? "bg-blue-600 text-white shadow-lg scale-105"
+                                        : isEligibleProgressive 
+                                            ? "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                                            : "bg-gray-100 text-gray-300 cursor-not-allowed"
+                                    }`}
                                 >
                                     {pct === 100 ? "Retraite Totale (100%)" : `${pct}% Pension`}
                                 </button>

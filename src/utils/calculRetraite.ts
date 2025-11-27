@@ -126,7 +126,7 @@ function ageInYearsFraction(dateNaissance: string, date: string) {
 function getTrimestresRequis(anneeNaissance: number) {
     return TRIMESTRES_REQUIS_PAR_NAISSANCE[anneeNaissance] ?? 172;
 }
-function getAgeLegal(anneeNaissance: number) {
+export function getAgeLegal(anneeNaissance: number) {
     return AGE_LEGAL_PAR_NAISSANCE[anneeNaissance] ?? 64;
 }
 
@@ -249,7 +249,19 @@ export function detectCarriereLongueEligibility(dateNaissance: string) {
         if (year <= birthYear + 18) tAvant18 += tr;
         if (year <= birthYear + 20) tAvant20 += tr;
     }
-    return { eligibleEarly: (tAvant16 >= 5 || tAvant18 >= 5 || tAvant20 >= 5), tAvant16, tAvant18, tAvant20 };
+    // ✅ CORRECTION : On renvoie bien ageDepartAnticipe pour éviter l'erreur TypeScript
+    let ageDepartAnticipe = undefined;
+    if (tAvant16 >= 5) ageDepartAnticipe = 58;
+    else if (tAvant18 >= 5) ageDepartAnticipe = 60;
+    else if (tAvant20 >= 5) ageDepartAnticipe = 62;
+
+    return { 
+        eligibleEarly: (tAvant16 >= 5 || tAvant18 >= 5 || tAvant20 >= 5), 
+        tAvant16, 
+        tAvant18, 
+        tAvant20,
+        ageDepartAnticipe
+    };
 }
 
 // =============================================================================
@@ -377,54 +389,22 @@ export function calculateRetraiteFromPeriods(person: PersonInfo, periods: Period
     const anneeDepartRetraite = toDate(dateRetraiteSouhaitee).getFullYear();
 
     for (const e of enfants) {
+        // On vérifie simplement que l'enfant est né avant la date de départ à la retraite
         if (e.dateNaissance && toDate(e.dateNaissance) < toDate(dateRetraiteSouhaitee)) {
             
-            // Valeurs par défaut si non renseignées dans le nouveau formulaire
-            // (Rétro-compatibilité ou défaut logique)
-            const defautAdoption = estFemme ? 4 : 0;
-            const defautEducation = estFemme ? 4 : 0;
+            // Récupération des valeurs définies par la logique du frontend (Case cochée ou non)
+            // partAdoption correspond à la Maternité (ou Adoption)
+            // partEducation correspond à l'Éducation
+            
+            const partAdoption = e.partageAdoption !== undefined ? e.partageAdoption : (estFemme ? 4 : 0);
+            const partEducation = e.partageEducation !== undefined ? e.partageEducation : 4;
 
-            const saisieAdoption = e.partageAdoption !== undefined ? e.partageAdoption : defautAdoption;
-            const saisieEducation = e.partageEducation !== undefined ? e.partageEducation : defautEducation;
-
-            if (e.adopte) {
-                // --- CAS ADOPTION ---
-                
-                // 1. Majoration Adoption (4 max)
-                // On prend ce que l'utilisateur a déclaré avoir obtenu (partage)
-                const majAdoption = Math.min(4, saisieAdoption);
-
-                // 2. Majoration Éducation (4 max, mais limité par le temps réel)
-                // On part de ce que l'utilisateur a déclaré (le partage théorique)
-                // ET on applique le filtre temporel (réalité de la durée)
-                let majEducation = Math.min(4, saisieEducation);
-
-                if (e.adoptionAnnee) {
-                    const anneeNaissance = parseInt(e.dateNaissance.substring(0, 4));
-                    const annee20ans = anneeNaissance + 20;
-                    
-                    // Limite 1 : L'enfant doit avoir moins de 20 ans
-                    const dureeMaxAge = Math.max(0, annee20ans - e.adoptionAnnee);
-                    // Limite 2 : Le temps doit être écoulé avant la retraite
-                    const dureeReelle = Math.max(0, anneeDepartRetraite - e.adoptionAnnee);
-
-                    // Le vrai nombre validé est le minimum entre le partage déclaré et la réalité temporelle
-                    majEducation = Math.min(majEducation, dureeMaxAge, dureeReelle);
-                } 
-                
-                trimestresMajoration += (majAdoption + majEducation);
-
-            } else {
-                // --- CAS BIOLOGIQUE ---
-                // Maternité : 4 (Mère) ou 0 (Père) - Non partageable
-                const majMaternite = estFemme ? 4 : 0;
-                
-                // Éducation : Partageable (saisie utilisateur)
-                // Note : Pour être puriste, on pourrait aussi vérifier l'âge (4 ans après naissance)
-                const majEducation = Math.min(4, saisieEducation);
-
-                trimestresMajoration += (majMaternite + majEducation);
-            }
+            // On additionne simplement les deux valeurs
+            // Femme (Case non cochée) : 4 + 4 = 8
+            // Femme (Case cochée)     : 4 + 2 = 6
+            // Homme (Case non cochée) : 0 + 4 = 4
+            // Homme (Case cochée)     : 0 + 2 = 2
+            trimestresMajoration += (partAdoption + partEducation);
         }
     }
 
